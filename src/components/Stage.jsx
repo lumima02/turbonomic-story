@@ -12,7 +12,7 @@ const COLORS = {
   teal: ['#009D9A', '#007D79', '#005D5D'],
   yellow: ['#F1C21B', '#D2A106', '#8E6A00'],
   red: ['#FF8389', '#FA4D56', '#DA1E28'],
-  gray: ['#6F6F6F', '#525252', '#393939']
+  gray: ['var(--block-gray-top)', 'var(--block-gray-left)', 'var(--block-gray-right)']   // per theme, in index.scss
 };
 const FLOAT = [0.55, 0.7, 0.5, 0.75, 0.6, 0.8, 0.55, 0.7, 0.5];
 const pts = a => a.map(p => p.join(',')).join(' ');

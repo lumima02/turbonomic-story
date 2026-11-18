@@ -1,4 +1,4 @@
-// Carbon g100 theme, applied globally.
+// Carbon g100 theme, applied globally; day mode switches to the white theme (see body.cds--white below).
 // Carbon's own @font-face paths don't resolve under Vite, so IBM Plex Sans is self-hosted from @ibm/plex-sans (see main.jsx).
 @use '@carbon/react/scss/config' with ($css--font-face: false);
 @use '@carbon/react/scss/themes';
@@ -26,7 +26,13 @@ $slow: 700ms;   // duration-slow-02
 $moderate: 400ms; // duration-slow-01
 
 html { scroll-behavior: smooth; }
-body { background: theme.$background; color: theme.$text-primary; }
+body { background: theme.$background; color: theme.$text-primary; transition: background-color $moderate $ease, color $moderate $ease; }
+
+// Night (default) and day values for the few colors that aren't Carbon tokens. Day mode is Carbon's white theme,
+// switched on by the cds--white class on body (see App.jsx).
+body { --block-gray-top: #6F6F6F; --block-gray-left: #525252; --block-gray-right: #393939; --halo: rgba(244, 244, 244, 0.2); }
+html:has(> body.cds--white) { background: #fff; color-scheme: light; }   // overscroll area matches
+body.cds--white { --block-gray-top: #C6C6C6; --block-gray-left: #A8A8A8; --block-gray-right: #8D8D8D; --halo: rgba(22, 22, 22, 0.12); }
 
 .story { padding-top: 3rem; }
 
@@ -133,9 +139,11 @@ $scene-buffer: 100vh;
 .quote blockquote { @include stepped-type(type.$fluid-paragraph-01); color: theme.$text-primary; }
 .quote figcaption { margin-top: $spacing-06; display: flex; flex-direction: column; gap: $spacing-01; @include type.type-style('body-compact-01'); color: theme.$text-secondary; }
 .quote--inline { display: none; margin-top: $spacing-09; }
-.quote--stage { position: absolute; bottom: $spacing-07; left: 50%; width: min(34rem, 80%); transform: translate(-50%, $spacing-05);
+// Centered under the blocks; App.jsx sets top and left from where the blocks are drawn.
+.quote--stage { position: absolute; top: auto; bottom: $spacing-07; left: 50%; max-width: calc(100% - #{$spacing-07}); transform: translate(-50%, $spacing-05);
   opacity: 0; visibility: hidden; transition: opacity $moderate $ease, transform $slow $ease, visibility 0s linear $moderate; }
 .quote--stage.is-shown { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition: opacity $moderate $ease 600ms, transform $slow $ease 600ms, visibility 0s; }
+.quote--stage blockquote { text-wrap: balance; }
 .quote figcaption strong { @include type.type-style('heading-compact-01'); color: theme.$text-primary; }
 
 // Proof tiles
@@ -236,7 +244,7 @@ $arrow-draw: 480ms;
 @keyframes hotspot-stem { from { transform: translateX(-50%) scaleY(0); } }
 @keyframes hotspot-rise { from { opacity: 0; transform: translateY($spacing-08) scale(0.25); } 40% { opacity: 1; } }
 .hotspot .cds--toggletip-button { width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: theme.$background-inverse; box-shadow: 0 0 0 4px rgba(244, 244, 244, 0.2); }
+  background: theme.$background-inverse; box-shadow: 0 0 0 4px var(--halo); }
 .hotspot .cds--toggletip-button svg { fill: theme.$icon-inverse; }
 .hotspot .cds--toggletip-content p { max-width: 16rem; }
 

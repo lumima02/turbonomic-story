@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Header, HeaderName, SkipToContent, Grid, Column, Button, Tag, Toggletip, ToggletipButton, ToggletipContent,
+  Header, HeaderName, HeaderGlobalBar, HeaderGlobalAction, SkipToContent, Grid, Column, Button, Tag, Toggletip, ToggletipButton, ToggletipContent,
   ContentSwitcher, Switch, ProgressBar, Tile, Link, Toggle, ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, ToastNotification,
   Table, TableHead, TableRow, TableHeader, TableBody, TableCell, InlineLoading
 } from '@carbon/react';
-import { ArrowDown, ArrowRight, Launch, Share, Copy, Information, WarningAltFilled, ErrorFilled, CheckmarkFilled, Reset } from '@carbon/icons-react';
+import { ArrowDown, ArrowRight, Launch, Share, Copy, Information, WarningAltFilled, ErrorFilled, CheckmarkFilled, Reset, Light, Asleep } from '@carbon/icons-react';
 import { SCENES, DEMO_URL, CASE_STUDIES } from './content.js';
 import Stage, { blockPosition } from './components/Stage.jsx';
 import SupplyChain from './components/SupplyChain.jsx';
@@ -16,6 +16,12 @@ const HEADER = 48;
 
 export default function App() {
   const [active, setActive] = useState(SCENES[0].id);
+  // Day mode swaps the page to Carbon's white theme (the cds--white zone class on body); the choice is remembered.
+  const [day, setDay] = useState(() => { try { return localStorage.getItem('theme') === 'day'; } catch { return false; } });
+  useEffect(() => {
+    document.body.classList.toggle('cds--white', day);
+    try { localStorage.setItem('theme', day ? 'day' : 'night'); } catch { /* storage unavailable */ }
+  }, [day]);
   const [option, setOption] = useState('safe');
   const [actions, setActions] = useState(byId('automation').actions);
   const [automate, setAutomate] = useState(false);
@@ -95,7 +101,70 @@ export default function App() {
   const automationTouched = automate || actions.some((a, n) => a.done !== byId('automation').actions[n].done || a.running);
 
   const ctx = { option, actions };
-  const scrollTo = id => refs.current[id]?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  // On wide screens the quote sits just under the blocks in Automation, centered on them. The blocks' drawn
+  // extent depends on the stage's zoom and the window, so it's measured, and followed each frame while the stage
+  // settles into place (about a second) so the quote arrives with it.
+  // The quote is kept to two lines: set in its full size where that fits the stage, stepped down a pixel at a time
+  // where it doesn't, then the box is shrunk to its longest line so the quote and credit share one left edge.
+  const stageRef = useRef(null), quoteRef = useRef(null);
+  useEffect(() => {
+    if (active !== 'automation') return;
+    const fit = () => {
+      const stage = stageRef.current, quote = quoteRef.current;
+      const text = quote?.querySelector('blockquote');
+      if (!stage || !text) return;
+      // measured at the stage's left edge, so the full stage width is available to wrap in
+      quote.style.width = ''; quote.style.left = '0px'; text.style.fontSize = ''; text.style.lineHeight = '';
+      const range = document.createRange(); range.selectNodeContents(text);
+      const lines = () => new Set([...range.getClientRects()].map(r => Math.round(r.top))).size;
+      let size = parseFloat(getComputedStyle(text).fontSize);
+      while (lines() > 2 && size > 18) { size -= 1; text.style.fontSize = size + 'px'; text.style.lineHeight = '1.3'; }
+      quote.style.width = Math.ceil(Math.max(...[...range.getClientRects()].map(r => r.right)) - text.getBoundingClientRect().left) + 1 + 'px';
+    };
+    const place = () => {
+      const stage = stageRef.current, quote = quoteRef.current;
+      const art = stage?.querySelector('.stage__svg .stage__root');
+      if (!art || !quote) return;
+      const s = stage.getBoundingClientRect(), a = art.getBoundingClientRect();
+      const gap = 24, room = s.height - quote.offsetHeight - 16;
+      quote.style.top = Math.min(room, a.bottom - s.top + gap) + 'px';
+      quote.style.left = a.left + a.width / 2 - s.left + 'px';
+      quote.style.bottom = 'auto';
+    };
+    const resize = () => { fit(); place(); };
+    let raf; const t0 = performance.now();
+    const follow = now => { place(); if (now - t0 < 1400) raf = requestAnimationFrame(follow); };
+    fit();
+    raf = requestAnimationFrame(follow);
+    window.addEventListener('resize', resize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, [active]);
+
+  // Jumps to a scene glide rather than snap: an eased scroll whose length grows with the distance (about 1s for
+  // the next scene, up to 2.4s across the whole story). Any wheel, touch or key input hands control back at once.
+  const glide = useRef(null);
+  const scrollTo = id => {
+    const el = refs.current[id]; if (!el) return;
+    const root = document.documentElement;
+    const target = el.getBoundingClientRect().top + window.scrollY - parseFloat(getComputedStyle(el).scrollMarginTop || 0);
+    glide.current?.();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { window.scrollTo(0, target); return; }
+    const from = window.scrollY, dist = target - from;
+    const dur = Math.min(2400, 900 + Math.abs(dist) / window.innerHeight * 180);
+    const ease = t => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);   // ease in-out, gentle start and landing
+    let raf, t0;
+    const stop = () => { cancelAnimationFrame(raf); root.style.scrollBehavior = '';
+      ['wheel', 'touchstart', 'keydown'].forEach(e => window.removeEventListener(e, stop)); glide.current = null; };
+    const step = now => {
+      t0 ??= now; const t = Math.min(1, (now - t0) / dur);
+      window.scrollTo(0, from + dist * ease(t));
+      if (t < 1) raf = requestAnimationFrame(step); else stop();
+    };
+    root.style.scrollBehavior = 'auto';   // the page's CSS smooth scrolling would fight the per-frame steps
+    ['wheel', 'touchstart', 'keydown'].forEach(e => window.addEventListener(e, stop, { passive: true }));
+    glide.current = stop;
+    raf = requestAnimationFrame(step);
+  };
   // Executing an action shows Carbon's inline loading for a moment, then marks it done (and its block rebalances).
   const RUN_MS = 1200;
   const patch = (id, change) => setActions(a => a.map(x => (x.id === id ? { ...x, ...change } : x)));
@@ -142,6 +211,12 @@ export default function App() {
       <SkipToContent href="#main" />
       <Header aria-label="IBM Turbonomic">
         <HeaderName href="#top" prefix="IBM">Turbonomic</HeaderName>
+        <HeaderGlobalBar>
+          <HeaderGlobalAction aria-label={day ? 'Switch to night mode' : 'Switch to day mode'} tooltipAlignment="end"
+            isActive={false} onClick={() => setDay(d => !d)}>
+            {day ? <Asleep size={20} /> : <Light size={20} />}
+          </HeaderGlobalAction>
+        </HeaderGlobalBar>
       </Header>
 
       <nav className={'progress progress--' + markerDir} aria-label="Story progress" style={{ '--k': activeIdx }}>
@@ -281,10 +356,10 @@ export default function App() {
           </Column>
 
           <Column lg={{ start: 9, end: 17 }} className="story__stage">
-            <div className={'stage' + (active === 'automation' ? ' has-quote' : '')}>
+            <div ref={stageRef} className={'stage' + (active === 'automation' ? ' has-quote' : '')}>
               {stageFor(active, true)}
               <Quote quote={byId('automation').quote} className={'quote--stage' + (active === 'automation' ? ' is-shown' : '')}
-                hidden={active !== 'automation'} />
+                hidden={active !== 'automation'} innerRef={quoteRef} />
             </div>
           </Column>
         </Grid>
@@ -316,9 +391,9 @@ export default function App() {
 
 // The customer quote for Automation. On wide screens it sits under the stage, as in the Figma frames;
 // below lg it follows the table. Only one of the two is ever displayed.
-function Quote({ quote, className, hidden }) {
+function Quote({ quote, className, hidden, innerRef }) {
   return (
-    <figure className={'quote ' + className} aria-hidden={hidden || undefined}>
+    <figure ref={innerRef} className={'quote ' + className} aria-hidden={hidden || undefined}>
       <blockquote>“{quote.text}”</blockquote>
       <figcaption><strong>{quote.name}</strong><span>{quote.role}</span></figcaption>
     </figure>
