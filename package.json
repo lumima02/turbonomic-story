@@ -1,0 +1,27 @@
+{
+  "name": "turbonomic-banking-story",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@carbon/icons-react": "^11.92.0",
+    "@carbon/react": "^1.120.0",
+    "@ibm/plex-sans": "^1.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "sass": "^1.108.2",
+    "vite": "^5.4.21"
+  },
+  "description": "Scroll-driven IBM Turbonomic story for banking and financial markets (Vite + React + Carbon)",
+  "engines": {
+    "node": ">=18"
+  }
+}

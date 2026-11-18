@@ -1,0 +1,339 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Header, HeaderName, SkipToContent, Grid, Column, Button, Tag, Toggletip, ToggletipButton, ToggletipContent,
+  ContentSwitcher, Switch, ProgressBar, Tile, Link, Toggle, ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, ToastNotification,
+  Table, TableHead, TableRow, TableHeader, TableBody, TableCell, InlineLoading
+} from '@carbon/react';
+import { ArrowDown, ArrowRight, Launch, Share, Copy, Information, WarningAltFilled, ErrorFilled, CheckmarkFilled, Reset } from '@carbon/icons-react';
+import { SCENES, DEMO_URL, CASE_STUDIES } from './content.js';
+import Stage, { blockPosition } from './components/Stage.jsx';
+import SupplyChain from './components/SupplyChain.jsx';
+
+const STATUS_ICON = { warning: WarningAltFilled, error: ErrorFilled, success: CheckmarkFilled };
+const byId = id => SCENES.find(s => s.id === id);
+
+const HEADER = 48;
+
+export default function App() {
+  const [active, setActive] = useState(SCENES[0].id);
+  const [option, setOption] = useState('safe');
+  const [actions, setActions] = useState(byId('automation').actions);
+  const [automate, setAutomate] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [toast, setToast] = useState(false);
+  const [revealed, setRevealed] = useState(() => new Set([SCENES[0].id]));
+  const refs = useRef({});
+  const timers = useRef([]);
+  const activeIdx = SCENES.findIndex(s => s.id === active);
+  // Which way the progress marker last travelled, so its leading edge can move first.
+  const lastIdx = useRef(activeIdx);
+  const [markerDir, setMarkerDir] = useState('down');
+  useEffect(() => {
+    if (activeIdx !== lastIdx.current) setMarkerDir(activeIdx > lastIdx.current ? 'down' : 'up');
+    lastIdx.current = activeIdx;
+  }, [activeIdx]);
+
+  // The scene crossing the middle of the viewport drives the stage.
+  useEffect(() => {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) setActive(e.target.dataset.scene); });
+    }, { rootMargin: '-45% 0px -45% 0px' });
+    // A scene's copy builds in once its top passes 65% of the viewport, and resets once it is fully off screen.
+    const reveal = new IntersectionObserver(entries => {
+      setRevealed(prev => {
+        const next = new Set(prev);
+        entries.forEach(e => (e.isIntersecting ? next.add(e.target.dataset.scene) : next.delete(e.target.dataset.scene)));
+        return next;
+      });
+    }, { rootMargin: '0px 0px -35% 0px' });
+    Object.values(refs.current).forEach(el => { if (el) { io.observe(el); reveal.observe(el); } });
+    return () => { io.disconnect(); reveal.disconnect(); };
+  }, []);
+
+  // Each scene's copy pins while you scroll through its buffer. A panel marked .scene__fit (the supply chain) first
+  // shrinks, down to FIT_MIN, so its scene fits the window and keeps its buffer. If a scene still can't fit (a very
+  // short window), it's marked data-tall and scrolls normally instead, so nothing is pinned off screen.
+  useEffect(() => {
+    const FIT_MIN = 0.6;
+    const sections = () => Object.values(refs.current).filter(Boolean);
+    const measure = () => sections().forEach(sec => {
+      const pin = sec.querySelector('.scene__pin');
+      if (!pin) return;
+      const avail = window.innerHeight - HEADER;
+      const fit = sec.querySelector('.scene__fit');
+      if (fit) {
+        const z = parseFloat(fit.style.zoom) || 1;
+        const shown = fit.getBoundingClientRect().height, natural = shown / z;
+        const pinned = window.matchMedia('(min-width: 66rem)').matches;   // Carbon lg: the copy only pins from here up
+        const want = pinned ? Math.min(1, Math.max(FIT_MIN, (avail - (pin.offsetHeight - shown)) / natural)) : 1;
+        if (Math.abs(want - z) > 0.005) fit.style.zoom = want === 1 ? '' : want.toFixed(3);
+      }
+      sec.dataset.tall = String(pin.offsetHeight > avail + 1);
+    });
+    const ro = new ResizeObserver(measure);
+    sections().forEach(sec => sec.querySelectorAll('.scene__pin, .scene__inner').forEach(el => ro.observe(el)));
+    window.addEventListener('resize', measure);
+    measure();
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+
+  function clearTimers() { timers.current.forEach(clearTimeout); timers.current = []; }
+  useEffect(() => clearTimers, []);
+
+  // Once the Automation scene is fully off screen, undo its actions so the demo is fresh on the way back:
+  // the red and yellow blocks return and the Execute buttons reappear.
+  const automationShown = revealed.has('automation');
+  const resetAutomation = () => {
+    clearTimers();
+    setActions(byId('automation').actions);
+    setAutomate(false);
+  };
+  useEffect(() => {
+    if (!automationShown) resetAutomation();
+  }, [automationShown]);
+  // The reset button is live once anything has changed from the starting state.
+  const automationTouched = automate || actions.some((a, n) => a.done !== byId('automation').actions[n].done || a.running);
+
+  const ctx = { option, actions };
+  const scrollTo = id => refs.current[id]?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  // Executing an action shows Carbon's inline loading for a moment, then marks it done (and its block rebalances).
+  const RUN_MS = 1200;
+  const patch = (id, change) => setActions(a => a.map(x => (x.id === id ? { ...x, ...change } : x)));
+  const later = (fn, ms) => { timers.current.push(setTimeout(fn, ms)); };
+  const runAction = (id, delay = 0) => {
+    later(() => patch(id, { running: true }), delay);
+    later(() => patch(id, { running: false, done: true }), delay + RUN_MS);
+  };
+  const execute = id => runAction(id);
+  // Turning automation on works through every pending action in turn, like Turbonomic running them under policy.
+  // Turning it off stops the queue; anything already executing finishes.
+  const onAutomate = on => {
+    setAutomate(on);
+    if (on) {
+      actions.filter(a => !a.done && !a.running).forEach((a, n) => runAction(a.id, 300 + n * (RUN_MS + 200)));
+    } else {
+      clearTimers();
+      setActions(a => a.map(x => (x.running ? { ...x, running: false, done: true } : x)));
+    }
+  };
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(window.location.href); } catch (e) { /* clipboard blocked: the field is still selectable */ }
+    setShareOpen(false); setToast(true);
+  };
+
+  const stageFor = (id, withHotspots) => {
+    const s = byId(id);
+    const src = id === 'trade-off' ? s.options.find(o => o.name === option) : s;
+    return (
+      <div className="stage__canvas">
+        <Stage sceneId={id} ctx={ctx} label={src.stageLabel} render={src.render} />
+        {withHotspots && id === 'problem' && (
+          <>
+            <Hotspot pos={blockPosition('problem', 1)} text={s.tips.idle} align="top" />
+            <Hotspot pos={blockPosition('problem', 3)} text={s.tips.pressure} align="top" />
+          </>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <SkipToContent href="#main" />
+      <Header aria-label="IBM Turbonomic">
+        <HeaderName href="#top" prefix="IBM">Turbonomic</HeaderName>
+      </Header>
+
+      <nav className={'progress progress--' + markerDir} aria-label="Story progress" style={{ '--k': activeIdx }}>
+        <span className="progress__marker" aria-hidden="true" />
+        {SCENES.map((s, k) => (
+          <button key={s.id} type="button" className={'progress__step' + (active === s.id ? ' is-active' : '')}
+            aria-label={`Scene ${k + 1}: ${s.eyebrow}`} aria-current={active === s.id ? 'step' : undefined} onClick={() => scrollTo(s.id)} />
+        ))}
+      </nav>
+
+      <main id="main" className="story">
+        <Grid>
+          <Column sm={4} md={8} lg={{ start: 2, end: 8 }} className="story__copy">
+            {SCENES.map((s, k) => (
+              <section key={s.id} id={s.id} data-scene={s.id} ref={el => { refs.current[s.id] = el; }}
+                className={'scene' + (revealed.has(s.id) ? ' is-revealed' : '')} aria-labelledby={s.id + '-h'}>
+                <div className="scene__pin">
+                <div className="scene__inner">
+                  <p className="scene__eyebrow">{s.eyebrow}</p>
+                  <h2 id={s.id + '-h'} className="scene__headline">{s.headline}</h2>
+                  {s.body && <p className="scene__body">{s.body}</p>}
+
+                  {s.id === 'banking' && (
+                    <div className="scene__actions">
+                      <Button kind="primary" renderIcon={ArrowDown} onClick={() => scrollTo('problem')}>See how it works</Button>
+                    </div>
+                  )}
+
+                  {s.id === 'problem' && (
+                    <div className="scene__tags">
+                      {s.tags.map(t => <Tag key={t.label} type="gray" renderIcon={STATUS_ICON[t.status]} className={'status status--' + t.status}>{t.label}</Tag>)}
+                    </div>
+                  )}
+
+                  {s.id === 'trade-off' && (() => {
+                    const o = s.options.find(x => x.name === option);
+                    return (
+                      <>
+                        <p className="scene__body" aria-live="polite">{o.body}</p>
+                        <ContentSwitcher className="scene__switcher" size="md" selectedIndex={option === 'safe' ? 0 : 1}
+                          onChange={({ name }) => setOption(name)}>
+                          {s.options.map(x => <Switch key={x.name} name={x.name} text={x.label} />)}
+                        </ContentSwitcher>
+                        <div className="scene__bars">
+                          <ProgressBar className="bar bar--cost" label="Cost" value={revealed.has(s.id) ? o.cost : 0} max={100} />
+                          <ProgressBar className="bar bar--risk" label="Risk" value={revealed.has(s.id) ? o.risk : 0} max={100} />
+                        </div>
+                        <p className="scene__bridge">{s.bridge}</p>
+                      </>
+                    );
+                  })()}
+
+                  {s.id === 'visibility' && (
+                    <div className="scene__panel scene__fit"><SupplyChain items={s.supplyChain} play={revealed.has(s.id)} /></div>
+                  )}
+
+                  {s.id === 'automation' && (
+                    <>
+                      <Table size="lg" className="scene__table" aria-label="Pending actions">
+                        <TableHead>
+                          <TableRow>
+                            <TableHeader colSpan={3}>
+                              <span className="scene__table-title">
+                                Pending actions <Tag type="gray">{actions.filter(a => !a.done).length} pending</Tag>
+                              </span>
+                            </TableHeader>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {actions.map(a => (
+                            <TableRow key={a.id}>
+                              <TableCell>
+                                <span className="action__title">{a.title}</span>
+                                <span className="action__detail">{a.detail}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Tag type="gray" renderIcon={a.category === 'Performance' ? ErrorFilled : WarningAltFilled}
+                                  className={'status status--' + (a.category === 'Performance' ? 'error' : 'warning')}>{a.category}</Tag>
+                              </TableCell>
+                              <TableCell>
+                                {a.done ? <Tag type="green">Executed</Tag>
+                                  : a.running ? <InlineLoading className="action__running" status="active" description="Executing…" />
+                                    : <Button size="sm" kind="primary" disabled={automate} onClick={() => execute(a.id)}>Execute</Button>}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      <div className="scene__controls">
+                        <Toggle id="automation-toggle" labelText="Automation" labelA="Off" labelB="On"
+                          toggled={automate} onToggle={onAutomate} />
+                        <Button kind="ghost" size="sm" renderIcon={Reset} disabled={!automationTouched} onClick={resetAutomation}>
+                          Reset demo
+                        </Button>
+                      </div>
+                      {/* Below lg the quote follows the table; on wide screens it sits under the stage instead. */}
+                      <Quote quote={s.quote} className="quote--inline" />
+                    </>
+                  )}
+
+                  {s.id === 'results' && (
+                    <>
+                      <div className="scene__stats">
+                        {s.stats.map((st, n) => (
+                          <Tile key={n} className="stat">
+                            <p className={'stat__value' + (st.small ? ' stat__value--small' : '')}>{st.value}</p>
+                            <p className="stat__label">{st.label}</p>
+                            <p className="stat__source">{st.source}</p>
+                          </Tile>
+                        ))}
+                      </div>
+                      <div className="scene__links">
+                        {Object.entries(CASE_STUDIES).map(([name, url]) => (
+                          <Link key={name} href={url} target="_blank" rel="noopener noreferrer" renderIcon={ArrowRight}>Read the {name} case study</Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {s.id === 'next-steps' && (
+                    <div className="scene__actions scene__actions--pair">
+                      <Button kind="primary" href={DEMO_URL} target="_blank" rel="noopener noreferrer" renderIcon={Launch}>Take the product tour</Button>
+                      <Button kind="tertiary" renderIcon={Share} onClick={() => setShareOpen(true)}>Share this page</Button>
+                    </div>
+                  )}
+
+                </div>
+
+                {k === 0 && <p className="scene__scroll" aria-hidden="true">Scroll <ArrowDown size={16} className="scene__scroll-icon" /></p>}
+                {s.footnote && <p className="scene__footnote">{s.footnote}</p>}
+                </div>
+
+                <div className="scene__stage-inline" aria-hidden="true">{/* Below lg: an upcoming scene's stage holds the previous scene's state, then morphs when you reach it. */}
+                  {stageFor(k > activeIdx && k > 0 ? SCENES[k - 1].id : s.id, false)}</div>
+              </section>
+            ))}
+          </Column>
+
+          <Column lg={{ start: 9, end: 17 }} className="story__stage">
+            <div className={'stage' + (active === 'automation' ? ' has-quote' : '')}>
+              {stageFor(active, true)}
+              <Quote quote={byId('automation').quote} className={'quote--stage' + (active === 'automation' ? ' is-shown' : '')}
+                hidden={active !== 'automation'} />
+            </div>
+          </Column>
+        </Grid>
+      </main>
+
+      {/* ComposedModal rather than Modal, so the Copy link button can carry Carbon's Copy icon. */}
+      <ComposedModal open={shareOpen} size="sm" onClose={() => setShareOpen(false)}>
+        <ModalHeader label={byId('next-steps').share.label} title={byId('next-steps').share.heading} />
+        <ModalBody>
+          <p className="share__body">{byId('next-steps').share.body}</p>
+          <TextInput id="share-link" labelText="Page link" readOnly value={typeof window !== 'undefined' ? window.location.href : ''}
+            onFocus={e => e.target.select()} />
+        </ModalBody>
+        <ModalFooter>
+          <Button kind="secondary" onClick={() => setShareOpen(false)}>Cancel</Button>
+          <Button kind="primary" renderIcon={Copy} onClick={copyLink}>Copy link</Button>
+        </ModalFooter>
+      </ComposedModal>
+
+      {toast && (
+        <div className="toast-region">
+          <ToastNotification kind="success" title={byId('next-steps').share.toastTitle} subtitle={byId('next-steps').share.toastBody}
+            timeout={5000} onClose={() => setToast(false)} onCloseButtonClick={() => setToast(false)} />
+        </div>
+      )}
+    </>
+  );
+}
+
+// The customer quote for Automation. On wide screens it sits under the stage, as in the Figma frames;
+// below lg it follows the table. Only one of the two is ever displayed.
+function Quote({ quote, className, hidden }) {
+  return (
+    <figure className={'quote ' + className} aria-hidden={hidden || undefined}>
+      <blockquote>“{quote.text}”</blockquote>
+      <figcaption><strong>{quote.name}</strong><span>{quote.role}</span></figcaption>
+    </figure>
+  );
+}
+
+function Hotspot({ pos, text, align }) {
+  return (
+    <div className="hotspot" style={pos}>
+      <Toggletip align={align}>
+        <ToggletipButton label="Show details">
+          <Information />
+        </ToggletipButton>
+        <ToggletipContent><p>{text}</p></ToggletipContent>
+      </Toggletip>
+    </div>
+  );
+}

@@ -1,0 +1,331 @@
+// Carbon g100 theme, applied globally.
+// Carbon's own @font-face paths don't resolve under Vite, so IBM Plex Sans is self-hosted from @ibm/plex-sans (see main.jsx).
+@use '@carbon/react/scss/config' with ($css--font-face: false);
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme' with ($theme: themes.$g100);
+@use '@carbon/react';
+@use '@carbon/react/scss/type';
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/breakpoint' as bp;
+@use '@carbon/react/scss/motion';
+@use 'sass:map';
+@use '@carbon/type/scss/scale';   // Carbon's type scale, for the one size between tokens (18px body copy)
+
+// A Carbon fluid type token applied in steps: its base values, then each breakpoint's values from that
+// breakpoint up. (Carbon's type-style mixin only offers these tokens as continuously scaling fluid type.)
+@mixin stepped-type($token) {
+  @each $prop, $value in map.remove($token, breakpoints) { #{$prop}: $value; }
+  @each $name, $props in map.get($token, breakpoints) {
+    @include bp.breakpoint($name) { @each $prop, $value in $props { #{$prop}: $value; } }
+  }
+}
+
+// Carbon expressive motion
+$ease: cubic-bezier(0.4, 0.14, 0.3, 1);
+$slow: 700ms;   // duration-slow-02
+$moderate: 400ms; // duration-slow-01
+
+html { scroll-behavior: smooth; }
+body { background: theme.$background; color: theme.$text-primary; }
+
+.story { padding-top: 3rem; }
+
+// ---------- Scenes (left column) ----------
+// Scroll buffer: each scene is taller than the screen, and its copy pins in place while you scroll through
+// the extra height. The stage holds too, so a scene takes deliberate scrolling to leave. Tune the weight here.
+$scene-buffer: 100vh;
+
+.scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 3rem + #{$scene-buffer});
+  scroll-margin-top: 3rem;   // jumps from the progress dots land below the header, not under it
+}
+.scene:last-child { min-height: calc(100vh - 3rem); }
+// Copy taller than the screen can't pin without hiding its top, so it scrolls normally; its length is the weight.
+.scene[data-tall='true'] { min-height: auto; }
+.scene[data-tall='true'] .scene__pin { position: relative; top: auto; }
+
+.scene__pin {
+  position: sticky;
+  top: 3rem;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 3rem);
+  padding-top: $spacing-07;
+}
+.scene__inner { margin: auto 0; padding-bottom: $spacing-07; }
+.scene__eyebrow { @include type.type-style('label-02'); color: theme.$link-primary; margin-bottom: $spacing-05; }
+// Type follows the Figma frames: Carbon's heading-05 steps (48/56 light at xlg) rather than scaling fluidly,
+// and body-02 (16/24) for the paragraph.
+.scene__headline { @include stepped-type(type.$fluid-heading-05); color: theme.$text-primary; margin-bottom: $spacing-06; }
+// Body copy one step up Carbon's type scale from body-02 (18px on 28px), so it reads clearly apart from the 14px eyebrow.
+.scene__body { @include type.type-style('body-02'); font-size: scale.type-scale(4); line-height: 1.75rem; color: theme.$text-secondary; max-width: 32rem; }
+.scene__footnote { @include type.type-style('helper-text-01'); color: theme.$text-helper; max-width: 34rem; padding-bottom: $spacing-06; }
+// The scroll cue sits at the foot of the first scene, just above its footnote.
+.scene__scroll { @include type.type-style('body-compact-01'); color: theme.$text-secondary; margin-bottom: $spacing-06; display: flex; align-items: center; gap: $spacing-02; }
+// Scroll cue: Carbon ArrowDown icon nudging down on a loop, using Carbon's expressive standard easing.
+.scene__scroll-icon { fill: currentColor; animation: scroll-cue 1.6s motion.motion(standard, expressive) infinite; }
+@keyframes scroll-cue {
+  0%, 20% { transform: translateY(0); opacity: 1; }
+  60% { transform: translateY($spacing-03); opacity: 0.4; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.scene__actions { margin-top: $spacing-09; display: flex; flex-wrap: wrap; gap: $spacing-05; }
+.scene__actions .cds--btn { min-width: 13rem; }
+.scene__tags { margin-top: $spacing-07; display: flex; flex-wrap: wrap; gap: $spacing-03; }
+.scene__tags .cds--tag { margin: 0; }
+.scene__switcher { margin-top: $spacing-07; max-width: 20rem; }
+// Switch labels centered, with the selected one in semibold, as in the Figma frames.
+.scene__switcher .cds--content-switcher-btn { justify-content: center; }
+.scene__switcher .cds--content-switcher--selected { font-weight: 600; }
+.scene__bars { margin-top: $spacing-07; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: $spacing-07; }
+.scene__bridge { @include stepped-type(type.$fluid-heading-04); font-weight: 300; margin-top: $spacing-09; }
+.scene__panel { margin-top: $spacing-07; max-width: 20.625rem; }
+.scene__table { margin-top: $spacing-07; }
+.scene__controls { margin-top: $spacing-06; display: flex; align-items: flex-end; justify-content: space-between; gap: $spacing-05; }
+.scene__stats { margin-top: $spacing-07; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: $spacing-05; }
+.scene__links { margin-top: $spacing-06; display: flex; flex-wrap: wrap; gap: $spacing-03 $spacing-07; }
+
+// Scene build-in: each piece of copy rises into place in sequence as the scene arrives.
+.scene__inner > *, .scene__scroll, .scene__footnote { opacity: 0; transform: translateY($spacing-07); transition: opacity $moderate $ease, transform $slow $ease; }
+.scene.is-revealed .scene__inner > *, .scene.is-revealed .scene__scroll, .scene.is-revealed .scene__footnote { opacity: 1; transform: none; }
+@for $n from 1 through 10 {
+  .scene.is-revealed .scene__inner > :nth-child(#{$n}) { transition-delay: #{($n - 1) * 90}ms; }
+}
+.scene.is-revealed .scene__scroll, .scene.is-revealed .scene__footnote { transition-delay: 700ms; }
+
+// Status icons inside gray tags (Carbon status indicator colors)
+.status .cds--tag__custom-icon svg { fill: currentColor; }
+// Carbon tightens a tag's start padding to 4px when it has an icon, which crowds the warning triangle (it fills its
+// whole 16px box, unlike the circular icons). Give every status icon the tag's normal 8px inset and room before the label.
+.cds--tag.status { padding-inline-start: $spacing-03; }
+.status .cds--tag__custom-icon { margin-inline-end: $spacing-03; }
+.status--warning .cds--tag__custom-icon { color: theme.$support-warning; }
+.status--error .cds--tag__custom-icon { color: theme.$support-error; }
+.status--success .cds--tag__custom-icon { color: theme.$support-success; }
+
+// Cost / risk bars
+// Cost and risk bars ease between values when the option switches (Carbon's 110ms default reads as a jump).
+.scene__bars .cds--progress-bar__bar { transition: transform $slow $ease; }
+.bar--cost .cds--progress-bar__bar { background-color: theme.$support-warning; }
+.bar--risk .cds--progress-bar__bar { background-color: theme.$support-error; }
+
+// Pending actions: a title bar with a count tag, then one row per action (what, category, status).
+// The action column takes the room; the tag and status columns stay on one line.
+.scene__table-title { display: flex; align-items: center; gap: $spacing-03; }
+.scene__table-title .cds--tag { margin: 0; }
+.scene__table.cds--data-table td:first-child { width: 100%; }
+.scene__table.cds--data-table td:not(:first-child) { white-space: nowrap; width: 1%; }
+.scene__table.cds--data-table td { vertical-align: middle; padding-top: $spacing-04; padding-bottom: $spacing-04; }
+.scene__table .cds--tag { margin: 0; }
+// A text-only button doesn't need Carbon's 64px icon padding on the right.
+.scene__table .cds--btn { padding-inline: $spacing-05; }
+.action__title { display: block; @include type.type-style('body-compact-01'); color: theme.$text-primary; }
+.action__detail { display: block; margin-top: $spacing-02; @include type.type-style('helper-text-01'); color: theme.$text-secondary; }
+.action__running { min-block-size: 2rem; }
+
+// Quote: under the stage on wide screens (fading in with the Automation scene), after the table below lg.
+.quote { max-width: 34rem; }
+// The quote is set large and light (Carbon's expressive paragraph style); the credit is small, so the two read apart.
+.quote blockquote { @include stepped-type(type.$fluid-paragraph-01); color: theme.$text-primary; }
+.quote figcaption { margin-top: $spacing-06; display: flex; flex-direction: column; gap: $spacing-01; @include type.type-style('body-compact-01'); color: theme.$text-secondary; }
+.quote--inline { display: none; margin-top: $spacing-09; }
+.quote--stage { position: absolute; bottom: $spacing-07; left: 50%; width: min(34rem, 80%); transform: translate(-50%, $spacing-05);
+  opacity: 0; visibility: hidden; transition: opacity $moderate $ease, transform $slow $ease, visibility 0s linear $moderate; }
+.quote--stage.is-shown { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition: opacity $moderate $ease 600ms, transform $slow $ease 600ms, visibility 0s; }
+.quote figcaption strong { @include type.type-style('heading-compact-01'); color: theme.$text-primary; }
+
+// Proof tiles
+.stat { min-height: 11.875rem; display: flex; flex-direction: column; }
+.stat__value { @include stepped-type(type.$fluid-heading-05); margin-bottom: $spacing-05; }
+.stat__value--small { @include stepped-type(type.$fluid-heading-04); font-weight: 300; }
+.stat__label { @include type.type-style('body-compact-01'); color: theme.$text-secondary; }
+.stat__source { @include type.type-style('helper-text-01'); color: theme.$text-helper; margin-top: auto; padding-top: $spacing-05; }
+
+// Supply chain (simplified Turbonomic UI): health rings with boxed labels, joined by arrows, branching at the foot.
+// The inner width is fixed at 282px (330px panel less 24px each side) so the branch arrows land on the column centers.
+.supply-chain.cds--tile { padding: $spacing-06; }
+.supply-chain__list { list-style: none; width: 17.625rem; margin: 0 auto; }
+.supply-chain__row { display: flex; flex-direction: column; align-items: center; }
+.supply-chain__row--pair { display: grid; grid-template-columns: 1fr 1fr; gap: $spacing-05; }
+.supply-chain__node { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.supply-chain__row:not(.supply-chain__row--pair) .supply-chain__node { width: 11.5rem; }
+.supply-chain__node .ring { display: block; }
+.supply-chain__label { margin-top: $spacing-02; width: 100%; padding: 2px $spacing-03; border: 1px solid theme.$border-subtle-02;
+  @include type.type-style('body-compact-01'); color: theme.$text-primary; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.supply-chain__arrow { display: block; margin: $spacing-02 0; overflow: visible; }
+// Arrows as in Turbonomic's supply chain: a thin gray line ending in a small solid triangle.
+.supply-chain__arrow path { fill: none; stroke: theme.$border-strong-01; stroke-width: 1.5; }
+.supply-chain__arrow .supply-chain__head { fill: theme.$border-strong-01; stroke: none; }
+// Rows rise in one by one once the panel has risen into place.
+.supply-chain__node { opacity: 0; transform: translateY($spacing-03); transition: opacity $moderate $ease, transform $moderate $ease; }
+.supply-chain.is-playing .supply-chain__node { opacity: 1; transform: none; transition-delay: calc(400ms + var(--d, 0ms)); }
+// Arrows draw from top to bottom with an easy ease (a trim path). On straight arrows the head rides down on the tip;
+// on the branch it appears as each curve lands.
+$easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
+$arrow-draw: 480ms;
+.supply-chain__shaft { stroke-dasharray: 1 2; stroke-dashoffset: 1; stroke-linecap: butt; }   // long gap and butt caps: nothing shows before it draws
+.supply-chain__head { opacity: 0; }
+.supply-chain__head.is-riding { transform: translateY(-16px); }
+.supply-chain.is-playing .supply-chain__shaft { stroke-dashoffset: 0; transition: stroke-dashoffset $arrow-draw $easy-ease var(--a); }
+.supply-chain.is-playing .supply-chain__head.is-riding { opacity: 1; transform: none; transition: transform $arrow-draw $easy-ease var(--a), opacity 120ms linear var(--a); }
+.supply-chain.is-playing .supply-chain__head.is-landing { opacity: 1; transition: opacity 150ms linear calc(var(--a) + #{$arrow-draw} - 100ms); }
+.ring__seg { transition: stroke-dasharray $slow $ease; }
+.ring__count { fill: theme.$text-primary; font-size: 13px; }
+
+// ---------- Stage (right column, pinned) ----------
+.story__stage { position: relative; }
+.stage { position: sticky; top: 3rem; height: calc(100vh - 3rem); display: flex; align-items: center; justify-content: center; }
+.stage__canvas { position: relative; width: min(100%, calc((100vh - 7rem) * 720 / 740)); aspect-ratio: 720 / 740; }
+// In Automation the stage rises and shrinks a little to make room for the quote beneath it, as in the Figma frame.
+.stage__canvas { transition: transform $slow $ease; }
+.stage.has-quote .stage__canvas { transform: translateY(-4rem) scale(0.9); }
+.stage__svg, .stage__render { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+
+.stage__root, .stage__plate { transition: transform $slow $ease, opacity $moderate $ease; }
+.stage__plate polygon { fill: theme.$layer-01; stroke: theme.$border-strong; stroke-width: 1; }
+// Scene 4 connectors draw from the upper layer down once the layers have spread, upper pair first.
+// Leaving the scene they fade out.
+.stage__lines { opacity: 0; transition: opacity $moderate $ease; }
+.stage__lines.is-on { opacity: 1; transition-duration: 0s; }
+.stage__lines line { stroke: theme.$link-primary; stroke-width: 1.5; stroke-opacity: 0.85; }
+.stage__lines.is-on line { animation: line-draw 900ms $ease calc(700ms + var(--d, 0ms)) backwards; }
+@keyframes line-draw { from { stroke-dashoffset: var(--from); } }
+.stage__scan { transition: opacity $moderate $ease; }
+.stage__scan polygon { fill: theme.$interactive; fill-opacity: 0.28; stroke: theme.$link-primary; stroke-width: 1.5; }
+// The scan plane's height and fade are set every frame in Stage.jsx, which also splits the blocks around it.
+
+.block { transition: transform $slow $ease; transition-delay: var(--d, 0ms); }
+// Blocks scale about the center of their footprint (local 0,0), so oversized and shrunken blocks stay centered on their cell.
+.block__body { transform-box: view-box; transform-origin: 0 0; transition: transform $slow $ease, opacity $moderate $ease; transition-delay: var(--d, 0ms); }
+.block polygon { transition: fill $moderate $ease; transition-delay: var(--fd, var(--d, 0ms)); }
+// Red (struggling) blocks pulse: semicircles rise from the top face, widen, and fade.
+.pulse { animation: pulse-in $moderate $ease 600ms both; }
+@keyframes pulse-in { from { opacity: 0; } }
+.pulse path { fill: none; stroke: #FA4D56; stroke-width: 2; vector-effect: non-scaling-stroke;   // red-50, matching the block
+  transform-box: view-box; transform-origin: 0 0; animation: pulse-ring 1.8s cubic-bezier(0, 0, 0.3, 1) infinite; }
+@keyframes pulse-ring {
+  0% { transform: translateY(0) scale(0.35); opacity: 0; }
+  12% { opacity: 0.75; }
+  100% { transform: translateY(-12px) scale(1.6); opacity: 0; }
+}
+.stage__plate { transition-delay: var(--d, 0ms); }
+.stage__scene { position: absolute; inset: 0; }
+.stage__render { animation: fade-in $slow $ease both; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.stage__svg.is-interactive { touch-action: pan-y; }
+.block__bob.is-floating { animation: bob 4s ease-in-out infinite alternate; }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+
+// Hotspots (Carbon toggletip)
+// Hotspots float above their block on a short stem, so the button never sits on the block itself.
+.hotspot { position: absolute; transform: translate(-50%, -100%); z-index: 2; padding-bottom: $spacing-08; }
+// The stem and dot are centered exactly on the anchor (the block's top corner), not offset by their own widths.
+.hotspot::before { content: ''; position: absolute; left: 50%; bottom: 0; height: $spacing-08; width: 1px; transform: translateX(-50%);
+  background: repeating-linear-gradient(to bottom, theme.$icon-secondary 0 3px, transparent 3px 6px); }
+.hotspot::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 6px; height: 6px; transform: translate(-50%, 50%); border-radius: 50%; background: theme.$icon-primary; }
+// Entrance: the dot appears on the block's corner, then the stem grows straight up and carries the button with it.
+.hotspot::after { animation: hotspot-dot 150ms $ease 750ms both; }
+.hotspot::before { transform-origin: bottom; animation: hotspot-stem $moderate $ease 850ms both; }
+.hotspot .cds--toggletip { animation: hotspot-rise $moderate $ease 850ms both; }
+@keyframes hotspot-dot { from { opacity: 0; } }
+@keyframes hotspot-stem { from { transform: translateX(-50%) scaleY(0); } }
+@keyframes hotspot-rise { from { opacity: 0; transform: translateY($spacing-08) scale(0.25); } 40% { opacity: 1; } }
+.hotspot .cds--toggletip-button { width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: theme.$background-inverse; box-shadow: 0 0 0 4px rgba(244, 244, 244, 0.2); }
+.hotspot .cds--toggletip-button svg { fill: theme.$icon-inverse; }
+.hotspot .cds--toggletip-content p { max-width: 16rem; }
+
+// Before / after compare
+.compare { position: absolute; inset: 0; --split: 50%; }
+// Opaque, so the "after" stage underneath can't show through where a "before" block is smaller than its healthy twin.
+.compare__before { position: absolute; inset: 0; background: theme.$background; clip-path: inset(0 calc(100% - var(--split)) 0 0); }
+.compare__divider { position: absolute; top: 8%; bottom: 14%; left: var(--split); width: 2px; margin-left: -1px; background: theme.$background-inverse; pointer-events: none; }
+.compare__handle { position: absolute; top: 50%; left: 50%; width: 2.5rem; height: 2.5rem; margin: -1.25rem 0 0 -1.25rem; border-radius: 50%; background: theme.$background-inverse; }
+.compare__handle::before, .compare__handle::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; margin-top: -5px; border: 5px solid transparent; }
+.compare__handle::before { left: 7px; border-right-color: theme.$icon-inverse; }
+.compare__handle::after { right: 7px; border-left-color: theme.$icon-inverse; }
+.compare__range { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.compare__range:focus-visible + .compare__divider .compare__handle { outline: 2px solid theme.$focus; outline-offset: 2px; }
+.compare__tag { position: absolute; bottom: 4%; @include type.type-style('body-compact-01'); color: theme.$text-secondary; pointer-events: none; }
+.compare__tag--before { left: 6%; }
+.compare__tag--after { right: 6%; color: theme.$text-primary; }
+.compare.is-intro .compare__before { transition: clip-path 900ms $ease; }
+.compare.is-intro .compare__divider { transition: left 900ms $ease; }
+.compare__tag, .compare__divider { animation: fade-in $moderate $ease 500ms both; }
+
+// ---------- Progress ----------
+.progress { position: fixed; right: $spacing-05; top: 50%; transform: translateY(-50%); z-index: 10; display: flex; flex-direction: column; gap: $spacing-03; }
+// The active step grows while a blue marker glides to it. The marker's leading edge moves first and its
+// trailing edge catches up, so it stretches toward the new scene and settles there.
+.progress__step { position: relative; width: 4px; height: 1rem; padding: 0; border: 0; background: theme.$border-strong; cursor: pointer; transition: height $slow $ease; }
+.progress__step.is-active { height: 2rem; }
+.progress__marker {
+  position: absolute; left: 0; width: 4px; z-index: 1; pointer-events: none; background: theme.$interactive;
+  top: calc(var(--k, 0) * 1.5rem);                  // each step above is 1rem plus an 0.5rem gap
+  bottom: calc(100% - var(--k, 0) * 1.5rem - 2rem);
+}
+.progress--down .progress__marker { transition: bottom $slow $ease, top $slow $ease 150ms; }
+.progress--up .progress__marker { transition: top $slow $ease, bottom $slow $ease 150ms; }
+.progress__step:focus-visible { outline: 2px solid theme.$focus; outline-offset: 2px; }
+
+// ---------- Share ----------
+.share__body { @include type.type-style('body-01'); color: theme.$text-secondary; margin-bottom: $spacing-06; }
+.toast-region { position: fixed; top: calc(3rem + #{$spacing-05}); right: $spacing-05; z-index: 9000; }
+.toast-region .cds--toast-notification { width: 22rem; }
+
+// ---------- Short screens: tighten the pinned layout so scenes still fit and keep their weight ----------
+@include bp.breakpoint(lg) {
+  @media (max-height: 840px) {
+    .scene__pin { padding-top: $spacing-05; }
+    .scene__inner { padding-bottom: $spacing-05; }
+    .scene__eyebrow { margin-bottom: $spacing-03; }
+    .scene__headline { margin-bottom: $spacing-05; }
+  }
+  @media (max-height: 760px) {
+    .scene__headline { @include stepped-type(type.$fluid-heading-04); font-weight: 300; }
+    .scene__actions, .scene__bridge { margin-top: $spacing-07; }
+    // Short windows: body copy back to body-02 and a smaller quote, so scenes still fit and the quote clears the stage.
+    .scene__body { font-size: scale.type-scale(3); line-height: 1.5rem; }
+    .quote--stage blockquote { @include stepped-type(type.$fluid-heading-03); font-weight: 300; }
+  }
+}
+
+// ---------- Responsive: below lg, the stage sits inside each scene ----------
+.scene__stage-inline { display: none; }
+@include bp.breakpoint-down(lg) {
+  .story__stage { display: none; }
+  .scene__stage-inline { display: block; order: -1; margin-bottom: $spacing-07; }
+  .scene__pin { position: static; min-height: auto; padding-top: 0; }
+  .scene__scroll { display: none; }
+  .quote--inline { display: block; }
+  .scene__stage-inline .stage__canvas { width: min(100%, 28rem); }
+  .scene { min-height: auto; padding-top: $spacing-09; }
+  .progress { display: none; }
+  .scene__stats { grid-template-columns: 1fr; }
+}
+// Narrow screens: each pending action stacks, with its category and status beneath the description.
+@include bp.breakpoint-down(md) {
+  .scene__table.cds--data-table tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: $spacing-03; height: auto; padding: $spacing-04 $spacing-05; border-top: 1px solid theme.$border-subtle-01; }
+  .scene__table.cds--data-table tbody td { display: block; width: auto; height: auto; padding: 0; border: 0; }
+  .scene__table.cds--data-table tbody td:first-child { flex-basis: 100%; width: 100%; }
+  .scene__table.cds--data-table tbody td:not(:first-child) { width: auto; }
+}
+
+// ---------- Reduced motion: keep every scene readable as a still ----------
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .stage__canvas, .stage__root, .stage__plate, .stage__lines, .stage__lines line, .stage__scan, .block, .block__body, .block polygon, .progress__step, .progress__marker { transition: none !important; }
+  .block__bob.is-floating, .hotspot, .stage__render, .compare__tag, .compare__divider, .stage__lines line, .pulse, .pulse path, .hotspot::before, .hotspot::after, .hotspot .cds--toggletip { animation: none !important; }
+  .pulse path { opacity: 0.3; transform: scale(1.1); }
+  .pulse path + path { display: none; }
+  .scene__bars .cds--progress-bar__bar, .ring__seg, .quote--stage { transition: none !important; }
+  .scene__scroll-icon { animation: none !important; }
+  .supply-chain__node, .supply-chain__shaft, .supply-chain__head { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .supply-chain__shaft { stroke-dashoffset: 0 !important; }
+  .scene__inner > *, .scene__scroll, .scene__footnote { opacity: 1 !important; transform: none !important; transition: none !important; }
+}
