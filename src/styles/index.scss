@@ -125,6 +125,9 @@ $scene-buffer: 100vh;
 .scene__table-title .cds--tag { margin: 0; }
 .scene__table.cds--data-table td:first-child { width: 100%; }
 .scene__table.cds--data-table td:not(:first-child) { white-space: nowrap; width: 1%; }
+// The action column is fixed to its widest state (Carbon's inline loading, "Executing…"), so swapping the Execute
+// button for the loader and then the Executed tag never resizes the columns or rewraps the action text.
+.scene__table.cds--data-table td:last-child { width: 8.25rem; min-width: 8.25rem; }
 .scene__table.cds--data-table td { vertical-align: middle; padding-top: $spacing-04; padding-bottom: $spacing-04; }
 .scene__table .cds--tag { margin: 0; }
 // A text-only button doesn't need Carbon's 64px icon padding on the right.
