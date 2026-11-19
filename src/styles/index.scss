@@ -30,9 +30,22 @@ body { background: theme.$background; color: theme.$text-primary; transition: ba
 
 // Night (default) and day values for the few colors that aren't Carbon tokens. Day mode is Carbon's white theme,
 // switched on by the cds--white class on body (see App.jsx).
-body { --block-gray-top: #6F6F6F; --block-gray-left: #525252; --block-gray-right: #393939; --halo: rgba(244, 244, 244, 0.2); }
+// Block faces (top, left, right) are Carbon palette steps; by day each color moves a step lighter.
+body {
+  --block-teal-top: #009D9A; --block-teal-left: #007D79; --block-teal-right: #005D5D;       // teal 50 / 60 / 70
+  --block-yellow-top: #F1C21B; --block-yellow-left: #D2A106; --block-yellow-right: #8E6A00; // yellow 30 / 40 / 60
+  --block-red-top: #FF8389; --block-red-left: #FA4D56; --block-red-right: #DA1E28;          // red 40 / 50 / 60
+  --block-gray-top: #6F6F6F; --block-gray-left: #525252; --block-gray-right: #393939;       // gray 60 / 70 / 80
+  --halo: rgba(244, 244, 244, 0.2);
+}
 html:has(> body.cds--white) { background: #fff; color-scheme: light; }   // overscroll area matches
-body.cds--white { --block-gray-top: #C6C6C6; --block-gray-left: #A8A8A8; --block-gray-right: #8D8D8D; --halo: rgba(22, 22, 22, 0.12); }
+body.cds--white {
+  --block-teal-top: #08BDBA; --block-teal-left: #009D9A; --block-teal-right: #007D79;       // teal 40 / 50 / 60
+  --block-yellow-top: #FDDC69; --block-yellow-left: #F1C21B; --block-yellow-right: #D2A106; // yellow 20 / 30 / 40
+  --block-red-top: #FFB3B8; --block-red-left: #FF8389; --block-red-right: #FA4D56;          // red 30 / 40 / 50
+  --block-gray-top: #C6C6C6; --block-gray-left: #A8A8A8; --block-gray-right: #8D8D8D;       // gray 30 / 40 / 50
+  --halo: rgba(22, 22, 22, 0.12);
+}
 
 .story { padding-top: 3rem; }
 

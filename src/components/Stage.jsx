@@ -8,12 +8,9 @@ import { SCENES } from '../content.js';
 const G = 112;           // grid spacing
 const E = 66;            // block edge
 const W = 0.866 * E, D = 0.5 * E, H = E;
-const COLORS = {
-  teal: ['#009D9A', '#007D79', '#005D5D'],
-  yellow: ['#F1C21B', '#D2A106', '#8E6A00'],
-  red: ['#FF8389', '#FA4D56', '#DA1E28'],
-  gray: ['var(--block-gray-top)', 'var(--block-gray-left)', 'var(--block-gray-right)']   // per theme, in index.scss
-};
+// Block faces (top, left, right) per health color. The values are CSS variables set per theme in index.scss, so
+// day mode can use lighter shades.
+const COLORS = Object.fromEntries(['teal', 'yellow', 'red', 'gray'].map(c => [c, ['top', 'left', 'right'].map(f => `var(--block-${c}-${f})`)]));
 const FLOAT = [0.55, 0.7, 0.5, 0.75, 0.6, 0.8, 0.55, 0.7, 0.5];
 const pts = a => a.map(p => p.join(',')).join(' ');
 const FACES = {
