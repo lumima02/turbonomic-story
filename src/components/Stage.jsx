@@ -193,6 +193,10 @@ function litAt(keys, t) {
 }
 // Clip region in a block's own coordinates for the part between heights lo and hi above its base. Each cut follows
 // the front chevron of the side faces; everything behind it (the top face) belongs to the part above.
+// The upper piece of a block split by the scan plane reaches this far down over the lower piece. The two clip edges
+// would otherwise meet exactly, and their anti-aliasing leaves a faint seam across the block, still visible once
+// the plane has faded at the end of the scan.
+const SEAM = 1.5;
 function bandRegion(lo, hi, top) {
   const cc = c => (c <= 0 ? -BIG : c >= top ? BIG : c);
   const a = cc(hi), b = cc(lo);
@@ -285,7 +289,7 @@ export function StageSvg({ state, label }) {
         <defs>
           {scanning && bounds.slice(1).map((hi, n) => [0, 1, 2].map(L => state.layers[L].map((b, k) => (
             <clipPath key={`${n}-${L}-${k}`} id={`${uid}-${n}-${L}-${k}`} clipPathUnits="userSpaceOnUse">
-              <polygon points={bandRegion(bounds[n] - state.lift[L] * G, hi - state.lift[L] * G, H * b.s)} />
+              <polygon points={bandRegion(bounds[n] - state.lift[L] * G - (n > 0 ? SEAM : 0), hi - state.lift[L] * G, H * b.s)} />
             </clipPath>
           ))))}
         </defs>
