@@ -310,11 +310,14 @@ export function StageSvg({ state, label }) {
                           const [x, y0] = cellXY(i, j, state.lift[L - 1]);
                           const [, y1] = cellXY(i, j, state.lift[L]);
                           const base = cellXY(i, j, 0)[1];   // screen y: larger is lower
-                          const a = Math.max(y1, base - hi), b = Math.max(a, Math.min(y0 - H, base - lo));
+                          // The line lands on the center of the lower block's top face, which sits H × its size above
+                          // the plate (blocks scale from the center of their footprint), so smaller blocks get longer lines.
+                          const below = state.layers[L - 1][k], top = H * (below.o > 0 ? below.s : 0);
+                          const a = Math.max(y1, base - hi), b = Math.max(a, Math.min(y0 - top, base - lo));
                           // Each line draws downward from the layer above. The dash is measured along the whole
-                          // connector (y1 to y0 - H), so a line split across the scan bands still grows as one.
+                          // connector (y1 to y0 - top), so a line split across the scan bands still grows as one.
                           // Lines stay mounted (zero length when outside this band) so the draw plays once, on entry.
-                          const len = Math.max(1, y0 - H - y1);
+                          const len = Math.max(1, y0 - top - y1);
                           return <line key={k} x1={x} x2={x} y1={a} y2={b} style={{
                             strokeDasharray: `${len} ${len * 2}`, strokeDashoffset: a - y1,
                             '--from': a - y1 + len + 'px', '--d': (L - 1) * 220 + (i + j) * 40 + 'ms' }} />;
