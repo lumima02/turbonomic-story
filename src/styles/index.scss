@@ -69,6 +69,7 @@ $scene-buffer: 100vh;
 // Body copy one step up Carbon's type scale from body-02 (18px on 28px), so it reads clearly apart from the 14px eyebrow.
 .scene__body { @include type.type-style('body-02'); font-size: scale.type-scale(4); line-height: 1.75rem; color: theme.$text-secondary; max-width: 32rem; }
 .scene__footnote { @include type.type-style('helper-text-01'); color: theme.$text-helper; max-width: 34rem; padding-bottom: $spacing-06; }
+.scene__footnote--near { margin-top: $spacing-07; padding-bottom: 0; }
 // The scroll cue sits at the foot of the first scene, just above its footnote.
 .scene__scroll { @include type.type-style('body-compact-01'); color: theme.$text-secondary; margin-bottom: $spacing-06; display: flex; align-items: center; gap: $spacing-02; }
 // Scroll cue: Carbon ArrowDown icon nudging down on a loop, using Carbon's expressive standard easing.

@@ -91,6 +91,7 @@ export const SCENES = [
       { value: '10%', label: 'VM growth absorbed with no new hardware', source: 'Metzler' },
       { value: '1,000+', label: 'servers decommissioned without affecting availability', source: 'Atruvia', small: true }
     ],
+    footnoteNearContent: true,   // sits just under the case study links instead of at the foot of the screen
     footnote: 'Atruvia is the IT provider for Germany’s cooperative banks, serving 91 million bank accounts. Metzler is a Frankfurt-based bank with more than 340 years in financial services.',
     stageLabel: 'A before and after comparison: imbalanced blocks on one side, a fully healthy cluster on the other.'
   },

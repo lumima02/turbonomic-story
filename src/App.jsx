@@ -343,10 +343,12 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* A footnote that explains the content (rather than citing a source) follows it, not the foot of the screen. */}
+                  {s.footnote && s.footnoteNearContent && <p className="scene__footnote scene__footnote--near">{s.footnote}</p>}
                 </div>
 
                 {k === 0 && <p className="scene__scroll" aria-hidden="true">Scroll <ArrowDown size={16} className="scene__scroll-icon" /></p>}
-                {s.footnote && <p className="scene__footnote">{s.footnote}</p>}
+                {s.footnote && !s.footnoteNearContent && <p className="scene__footnote">{s.footnote}</p>}
                 </div>
 
                 <div className="scene__stage-inline" aria-hidden="true">{/* Below lg: an upcoming scene's stage holds the previous scene's state, then morphs when you reach it. */}
