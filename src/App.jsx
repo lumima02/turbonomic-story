@@ -302,7 +302,7 @@ export default function App() {
                                 <span className="action__title">
                                   {a.title}
                                   {/* Why Turbonomic recommends it: the measurement behind the action. */}
-                                  <Toggletip className="action__why" align="top">
+                                  <Toggletip className="action__why" align="top-start">
                                     <ToggletipButton label={`Why: ${a.title}`}><Information size={14} /></ToggletipButton>
                                     <ToggletipContent><p>{a.why}</p></ToggletipContent>
                                   </Toggletip>

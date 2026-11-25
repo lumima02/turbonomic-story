@@ -152,6 +152,9 @@ $scene-buffer: 100vh;
 .action__title { display: block; @include type.type-style('body-compact-01'); color: theme.$text-primary; }
 .action__detail { display: block; margin-top: $spacing-02; @include type.type-style('helper-text-01'); color: theme.$text-secondary; }
 .action__running { min-block-size: 2rem; }
+// Carbon wraps the table in a sideways-scrolling box, which clipped the "why" pop-ups; the table never needs to
+// scroll here, so it can show them in full.
+#automation .cds--data-table-content { overflow: visible; }
 // The "why" info button sits at the end of the action title.
 .action__why { display: inline-flex; vertical-align: middle; margin-inline-start: $spacing-02; }
 .action__why .cds--toggletip-button svg { fill: theme.$icon-secondary; }
