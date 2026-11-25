@@ -83,15 +83,7 @@ $scene-buffer: 100vh;
 .scene__body { @include type.type-style('body-02'); font-size: scale.type-scale(4); line-height: 1.75rem; color: theme.$text-secondary; max-width: 32rem; }
 .scene__footnote { @include type.type-style('helper-text-01'); color: theme.$text-helper; max-width: 34rem; padding-bottom: $spacing-06; }
 .scene__footnote--near { margin-top: $spacing-07; padding-bottom: 0; }
-// The scroll cue sits at the foot of the first scene, just above its footnote.
-.scene__scroll { @include type.type-style('body-compact-01'); color: theme.$text-secondary; margin-bottom: $spacing-06; display: flex; align-items: center; gap: $spacing-02; }
-// Scroll cue: Carbon ArrowDown icon nudging down on a loop, using Carbon's expressive standard easing.
-.scene__scroll-icon { fill: currentColor; animation: scroll-cue 1.6s motion.motion(standard, expressive) infinite; }
-@keyframes scroll-cue {
-  0%, 20% { transform: translateY(0); opacity: 1; }
-  60% { transform: translateY($spacing-03); opacity: 0.4; }
-  100% { transform: translateY(0); opacity: 1; }
-}
+
 
 .scene__actions { margin-top: $spacing-09; display: flex; flex-wrap: wrap; gap: $spacing-05; }
 .scene__actions .cds--btn { min-width: 13rem; }
@@ -121,12 +113,12 @@ $scene-buffer: 100vh;
 .scene__links { margin-top: $spacing-06; display: flex; flex-wrap: wrap; gap: $spacing-03 $spacing-07; }
 
 // Scene build-in: each piece of copy rises into place in sequence as the scene arrives.
-.scene__inner > *, .scene__scroll, .scene__footnote { opacity: 0; transform: translateY($spacing-07); transition: opacity $moderate $ease, transform $slow $ease; }
-.scene.is-revealed .scene__inner > *, .scene.is-revealed .scene__scroll, .scene.is-revealed .scene__footnote { opacity: 1; transform: none; }
+.scene__inner > *, .scene__footnote { opacity: 0; transform: translateY($spacing-07); transition: opacity $moderate $ease, transform $slow $ease; }
+.scene.is-revealed .scene__inner > *, .scene.is-revealed .scene__footnote { opacity: 1; transform: none; }
 @for $n from 1 through 10 {
   .scene.is-revealed .scene__inner > :nth-child(#{$n}) { transition-delay: #{($n - 1) * 90}ms; }
 }
-.scene.is-revealed .scene__scroll, .scene.is-revealed .scene__footnote { transition-delay: 700ms; }
+.scene.is-revealed .scene__footnote { transition-delay: 700ms; }
 
 // Status icons inside gray tags (Carbon status indicator colors)
 .status .cds--tag__custom-icon svg { fill: currentColor; }
@@ -253,6 +245,14 @@ $arrow-draw: 480ms;
 .ring__count { fill: theme.$text-primary; font-size: 13px; }
 
 // ---------- Stage (right column, pinned) ----------
+// Color key across the top of the stage; fades in with The problem and out after Proven results.
+.legend { position: absolute; top: $spacing-07; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; flex-wrap: wrap; justify-content: center;
+  gap: $spacing-03 $spacing-06; width: max-content; max-width: calc(100% - #{$spacing-07});
+  opacity: 0; visibility: hidden; transition: opacity $moderate $ease, visibility 0s linear $moderate; }
+.legend.is-shown { opacity: 1; visibility: visible; transition: opacity $moderate $ease 300ms, visibility 0s; }
+.legend__item { display: flex; align-items: center; gap: $spacing-03; @include type.type-style('label-01'); color: theme.$text-secondary; }
+.legend__cube { flex: none; }
+.legend__cube polygon { transition: fill $moderate $ease; }
 .story__stage { position: relative; }
 .stage { position: sticky; top: 3rem; height: calc(100vh - 3rem); display: flex; align-items: center; justify-content: center; }
 .stage__canvas { position: relative; width: min(100%, calc((100vh - 7rem) * 720 / 740)); aspect-ratio: 720 / 740; }
@@ -380,7 +380,6 @@ $arrow-draw: 480ms;
   .story__stage { display: none; }
   .scene__stage-inline { display: block; order: -1; margin-bottom: $spacing-07; }
   .scene__pin { position: static; min-height: auto; padding-top: 0; }
-  .scene__scroll { display: none; }
   .quote--inline { display: block; }
   .scene__stage-inline .stage__canvas { width: min(100%, 28rem); }
   .scene { min-height: auto; padding-top: $spacing-09; }
@@ -403,8 +402,7 @@ $arrow-draw: 480ms;
   .pulse path { opacity: 0.3; transform: scale(1.1); }
   .pulse path + path { display: none; }
   .scene__bars .cds--progress-bar__bar, .ring__seg, .quote--stage { transition: none !important; }
-  .scene__scroll-icon { animation: none !important; }
   .supply-chain__node, .supply-chain__shaft, .supply-chain__head { opacity: 1 !important; transform: none !important; transition: none !important; }
   .supply-chain__shaft { stroke-dashoffset: 0 !important; }
-  .scene__inner > *, .scene__scroll, .scene__footnote { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .scene__inner > *, .scene__footnote { opacity: 1 !important; transform: none !important; transition: none !important; }
 }

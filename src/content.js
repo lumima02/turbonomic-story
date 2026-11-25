@@ -10,6 +10,17 @@ export const CASE_STUDIES = {
 // 3D renders: put Blender images in /public/renders and add `render: 'renders/scene-01.png'`
 // to a scene (or to a trade-off option). That scene then shows the image instead of the
 // animated blocks; scenes without a render keep the blocks.
+// Color key shown beside the blocks from The problem through Proven results. `only` limits an entry to one scene.
+export const LEGEND = {
+  scenes: ['problem', 'trade-off', 'visibility', 'automation', 'results'],
+  items: [
+    { color: 'teal', label: 'Healthy' },
+    { color: 'yellow', label: 'Oversized: wasted spend' },
+    { color: 'red', label: 'Congested: slow service' },
+    { color: 'gray', label: 'Not yet scanned', only: 'visibility' }
+  ]
+};
+
 export const SCENES = [
   {
     id: 'banking',
@@ -48,16 +59,16 @@ export const SCENES = [
       { name: 'cut', label: 'Cut costs', body: 'Trim capacity to meet budget targets. Costs drop until trading volume spikes and transactions slow down.', cost: 30, risk: 85,
         stageLabel: 'Blocks are removed and most of the remaining ones are congested.' },
       { name: 'balance', label: 'Use Turbonomic', body: 'Match resources to demand in real time. Performance holds through market open and month-end, and idle capacity stops adding to the bill.', cost: 35, risk: 15,
-        stageLabel: 'Every block is healthy and right-sized.', bridge: 'Here’s how it works.' }
+        stageLabel: 'Every block is healthy and right-sized.', bridge: null }   // no closing line: the scroll cue says it
     ],
-    bridge: 'There’s a third option.',   // an option's own bridge replaces this
+    bridge: 'There’s a third option.',   // points at the third tab; an option's own bridge (null for none) replaces it
     footnote: 'Cost and risk bars are illustrative.'
   },
   {
     id: 'visibility',
     eyebrow: 'Full-stack visibility',
     headline: 'Turbonomic sees the whole picture.',
-    body: 'It maps how every application, from core banking to mobile apps, depends on the infrastructure beneath it. That’s the visibility regulations like the EU’s Digital Operational Resilience Act now expect.',
+    body: 'Think of it as air traffic control for your infrastructure. It maps how every application, from core banking to mobile apps, depends on the infrastructure beneath it. That’s the visibility regulations like the EU’s Digital Operational Resilience Act now expect.',
     footnote: 'Supply chain counts are illustrative.',
     supplyChain: [
       { label: 'Business application', count: 12, segs: [['green', 0.75], ['yellow', 0.25]] },

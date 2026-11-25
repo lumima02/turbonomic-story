@@ -5,7 +5,7 @@ import {
   Table, TableHead, TableRow, TableHeader, TableBody, TableCell, InlineLoading
 } from '@carbon/react';
 import { ArrowDown, ArrowRight, Launch, Share, Copy, Information, WarningAltFilled, ErrorFilled, CheckmarkFilled, Reset, Light, Asleep } from '@carbon/icons-react';
-import { SCENES, DEMO_URL, CASE_STUDIES } from './content.js';
+import { SCENES, DEMO_URL, CASE_STUDIES, LEGEND } from './content.js';
 import Stage, { blockPosition } from './components/Stage.jsx';
 import SupplyChain from './components/SupplyChain.jsx';
 
@@ -264,7 +264,7 @@ export default function App() {
                           <ProgressBar className="bar bar--cost" label="Cost" value={revealed.has(s.id) ? o.cost : 0} max={100} />
                           <ProgressBar className="bar bar--risk" label="Risk" value={revealed.has(s.id) ? o.risk : 0} max={100} />
                         </div>
-                        <p className="scene__bridge">{o.bridge || s.bridge}</p>
+                        {('bridge' in o ? o.bridge : s.bridge) && <p className="scene__bridge">{'bridge' in o ? o.bridge : s.bridge}</p>}
                         {/* Two stacked chevrons that light in turn, pointing on to the next scene; clicking glides there. */}
                         <button type="button" className="scroll-cue" aria-label={`Continue to ${SCENES[k + 1].eyebrow}`} onClick={() => scrollTo(SCENES[k + 1].id)}>
                           <svg width="28" height="32" viewBox="0 0 28 32" aria-hidden="true">
@@ -383,7 +383,6 @@ export default function App() {
                   {s.footnote && s.footnoteNearContent && <p className="scene__footnote scene__footnote--near">{s.footnote}</p>}
                 </div>
 
-                {k === 0 && <p className="scene__scroll" aria-hidden="true">Scroll <ArrowDown size={16} className="scene__scroll-icon" /></p>}
                 {s.footnote && !s.footnoteNearContent && (
                   <p className="scene__footnote">
                     {s.footnoteUrl
@@ -402,6 +401,7 @@ export default function App() {
           <Column lg={{ start: 9, end: 17 }} className="story__stage">
             <div ref={stageRef} className={'stage' + (active === 'automation' ? ' has-quote' : '')}>
               {stageFor(active, true)}
+              <Legend active={active} />
               <Quote quote={byId('automation').quote} className={'quote--stage' + (active === 'automation' ? ' is-shown' : '')}
                 hidden={active !== 'automation'} innerRef={quoteRef} />
             </div>
@@ -430,6 +430,25 @@ export default function App() {
         </div>
       )}
     </>
+  );
+}
+
+// What the block colors mean, above the stage. Each swatch is a tiny block drawn with the same face colors.
+function Legend({ active }) {
+  const shown = LEGEND.scenes.includes(active);
+  return (
+    <ul className={'legend' + (shown ? ' is-shown' : '')} aria-label="Block colors" aria-hidden={!shown || undefined}>
+      {LEGEND.items.filter(it => !it.only || it.only === active).map(it => (
+        <li key={it.color} className="legend__item">
+          <svg className="legend__cube" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true">
+            <polygon points="7,0 14,4 7,8 0,4" style={{ fill: `var(--block-${it.color}-top)` }} />
+            <polygon points="0,4 7,8 7,16 0,12" style={{ fill: `var(--block-${it.color}-left)` }} />
+            <polygon points="7,8 14,4 14,12 7,16" style={{ fill: `var(--block-${it.color}-right)` }} />
+          </svg>
+          {it.label}
+        </li>
+      ))}
+    </ul>
   );
 }
 
