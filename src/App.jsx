@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Header, HeaderName, HeaderGlobalBar, HeaderGlobalAction, SkipToContent, Grid, Column, Button, Tag, Toggletip, ToggletipButton, ToggletipContent,
-  ContentSwitcher, Switch, ProgressBar, Tile, Link, Toggle, ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, ToastNotification,
+  ContentSwitcher, Switch, ProgressBar, ProgressIndicator, ProgressStep, Tile, Link, Toggle, ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, ToastNotification,
   Table, TableHead, TableRow, TableHeader, TableBody, TableCell, InlineLoading
 } from '@carbon/react';
 import { ArrowDown, ArrowRight, Launch, Share, Copy, Information, WarningAltFilled, ErrorFilled, CheckmarkFilled, Reset, Light, Asleep } from '@carbon/icons-react';
@@ -256,25 +256,35 @@ export default function App() {
                     return (
                       <>
                         <p className="scene__body" aria-live="polite">{o.body}</p>
-                        <ContentSwitcher className="scene__switcher" size="md" selectedIndex={option === 'safe' ? 0 : 1}
+                        <ContentSwitcher className="scene__switcher" size="md" selectedIndex={s.options.indexOf(o)}
                           onChange={({ name }) => setOption(name)}>
                           {s.options.map(x => <Switch key={x.name} name={x.name} text={x.label} />)}
                         </ContentSwitcher>
-                        <div className="scene__bars">
+                        <div className={'scene__bars' + (o.name === 'balance' ? ' is-good' : '')}>
                           <ProgressBar className="bar bar--cost" label="Cost" value={revealed.has(s.id) ? o.cost : 0} max={100} />
                           <ProgressBar className="bar bar--risk" label="Risk" value={revealed.has(s.id) ? o.risk : 0} max={100} />
                         </div>
-                        <p className="scene__bridge">{s.bridge}</p>
+                        <p className="scene__bridge">{o.bridge || s.bridge}</p>
                       </>
                     );
                   })()}
 
                   {s.id === 'visibility' && (
-                    <div className="scene__panel scene__fit"><SupplyChain items={s.supplyChain} play={revealed.has(s.id)} /></div>
+                    <div className="scene__panel scene__fit">
+                      <SupplyChain items={s.supplyChain} play={revealed.has(s.id)} />
+                      <div className="platforms">
+                        <p className="platforms__label">Works across</p>
+                        <ul className="platforms__list">
+                          {s.platforms.map(p => <li key={p}><Tag type="outline" size="sm">{p}</Tag></li>)}
+                        </ul>
+                      </div>
+                    </div>
                   )}
 
                   {s.id === 'automation' && (
                     <>
+                      {/* Shrinks with the window (like the supply chain) so the scene still pins. */}
+                      <div className="scene__fit">
                       <Table size="lg" className="scene__table" aria-label="Pending actions">
                         <TableHead>
                           <TableRow>
@@ -289,7 +299,14 @@ export default function App() {
                           {actions.map(a => (
                             <TableRow key={a.id}>
                               <TableCell>
-                                <span className="action__title">{a.title}</span>
+                                <span className="action__title">
+                                  {a.title}
+                                  {/* Why Turbonomic recommends it: the measurement behind the action. */}
+                                  <Toggletip className="action__why" align="top">
+                                    <ToggletipButton label={`Why: ${a.title}`}><Information size={14} /></ToggletipButton>
+                                    <ToggletipContent><p>{a.why}</p></ToggletipContent>
+                                  </Toggletip>
+                                </span>
                                 <span className="action__detail">{a.detail}</span>
                               </TableCell>
                               <TableCell>
@@ -311,6 +328,11 @@ export default function App() {
                         <Button kind="ghost" size="sm" renderIcon={Reset} disabled={!automationTouched} onClick={resetAutomation}>
                           Reset demo
                         </Button>
+                      </div>
+                      <ProgressIndicator className="control" spaceEqually aria-label="Adopting automation"
+                        currentIndex={automate ? 2 : actions.some((a, n) => a.done !== s.actions[n].done || a.running) ? 1 : 0}>
+                        {s.control.map(c => <ProgressStep key={c.label} label={c.label} secondaryLabel={c.text} />)}
+                      </ProgressIndicator>
                       </div>
                       {/* Below lg the quote follows the table; on wide screens it sits under the stage instead. */}
                       <Quote quote={s.quote} className="quote--inline" />
@@ -337,10 +359,17 @@ export default function App() {
                   )}
 
                   {s.id === 'next-steps' && (
+                    <>
+                    <ul className="audiences" aria-label="Who it helps">
+                      {s.audiences.map(a => (
+                        <li key={a.role} className="audience"><span className="audience__role">{a.role}</span><span className="audience__text">{a.text}</span></li>
+                      ))}
+                    </ul>
                     <div className="scene__actions scene__actions--pair">
                       <Button kind="primary" href={DEMO_URL} target="_blank" rel="noopener noreferrer" renderIcon={Launch}>Take the product tour</Button>
                       <Button kind="tertiary" renderIcon={Share} onClick={() => setShareOpen(true)}>Share this page</Button>
                     </div>
+                    </>
                   )}
 
                   {/* A footnote that explains the content (rather than citing a source) follows it, not the foot of the screen. */}
@@ -348,7 +377,13 @@ export default function App() {
                 </div>
 
                 {k === 0 && <p className="scene__scroll" aria-hidden="true">Scroll <ArrowDown size={16} className="scene__scroll-icon" /></p>}
-                {s.footnote && !s.footnoteNearContent && <p className="scene__footnote">{s.footnote}</p>}
+                {s.footnote && !s.footnoteNearContent && (
+                  <p className="scene__footnote">
+                    {s.footnoteUrl
+                      ? <Link href={s.footnoteUrl} target="_blank" rel="noopener noreferrer" size="sm" inline className="scene__source">{s.footnote}</Link>
+                      : s.footnote}
+                  </p>
+                )}
                 </div>
 
                 <div className="scene__stage-inline" aria-hidden="true">{/* Below lg: an upcoming scene's stage holds the previous scene's state, then morphs when you reach it. */}

@@ -97,7 +97,7 @@ $scene-buffer: 100vh;
 .scene__actions .cds--btn { min-width: 13rem; }
 .scene__tags { margin-top: $spacing-07; display: flex; flex-wrap: wrap; gap: $spacing-03; }
 .scene__tags .cds--tag { margin: 0; }
-.scene__switcher { margin-top: $spacing-07; max-width: 20rem; }
+.scene__switcher { margin-top: $spacing-07; max-width: 30rem; }
 // Switch labels centered, with the selected one in semibold, as in the Figma frames.
 .scene__switcher .cds--content-switcher-btn { justify-content: center; }
 .scene__switcher .cds--content-switcher--selected { font-weight: 600; }
@@ -132,6 +132,9 @@ $scene-buffer: 100vh;
 .scene__bars .cds--progress-bar__bar { transition: transform $slow $ease; }
 .bar--cost .cds--progress-bar__bar { background-color: theme.$support-warning; }
 .bar--risk .cds--progress-bar__bar { background-color: theme.$support-error; }
+// With Turbonomic both bars are low, so they turn green instead of warning colors.
+.scene__bars .cds--progress-bar__bar { transition-property: transform, background-color; }
+.scene__bars.is-good .cds--progress-bar__bar { background-color: theme.$support-success; }
 
 // Pending actions: a title bar with a count tag, then one row per action (what, category, status).
 // The action column takes the room; the tag and status columns stay on one line.
@@ -149,6 +152,39 @@ $scene-buffer: 100vh;
 .action__title { display: block; @include type.type-style('body-compact-01'); color: theme.$text-primary; }
 .action__detail { display: block; margin-top: $spacing-02; @include type.type-style('helper-text-01'); color: theme.$text-secondary; }
 .action__running { min-block-size: 2rem; }
+// The "why" info button sits at the end of the action title.
+.action__why { display: inline-flex; vertical-align: middle; margin-inline-start: $spacing-02; }
+.action__why .cds--toggletip-button svg { fill: theme.$icon-secondary; }
+.action__why .cds--toggletip-content p { max-width: 16rem; }
+
+// Recommend → Approve → Automate, under the Automation toggle (Carbon's progress indicator, display only).
+.control { margin-top: $spacing-07; }
+.control .cds--progress-step { pointer-events: none; }
+.control .cds--progress-optional { @include type.type-style('helper-text-01'); position: static; margin-top: $spacing-02; padding-inline-end: $spacing-05; color: theme.$text-secondary; }
+
+// "Works across": the platforms Turbonomic manages, stacked beside the supply chain so the scene grows no taller.
+// Below md they wrap underneath instead.
+#visibility .scene__fit { display: flex; align-items: flex-end; gap: $spacing-07; }
+#visibility .scene__fit > .supply-chain { flex: none; }   // keeps its own width; the tags take what is left
+.platforms__list { flex-direction: column; align-items: flex-start; }
+@include bp.breakpoint-down(md) {
+  #visibility .scene__fit { flex-direction: column; align-items: stretch; gap: $spacing-05; }
+  .platforms__list { flex-direction: row; }
+}
+.platforms__label { @include type.type-style('label-01'); color: theme.$text-secondary; margin-bottom: $spacing-03; }
+.platforms__list { display: flex; flex-wrap: wrap; gap: $spacing-03; }
+.platforms__list .cds--tag { margin: 0; }
+
+// Next steps: who it helps, as three short columns above the buttons.
+.audiences { margin-top: $spacing-07; display: grid; grid-template-columns: repeat(3, 1fr); gap: $spacing-05; max-width: 36rem; }
+.audience { border-top: 1px solid theme.$border-subtle-01; padding-top: $spacing-04; display: flex; flex-direction: column; gap: $spacing-02; }
+.audience__role { @include type.type-style('heading-compact-01'); color: theme.$text-primary; }
+.audience__text { @include type.type-style('body-compact-01'); color: theme.$text-secondary; }
+@include bp.breakpoint-down(md) { .audiences { grid-template-columns: 1fr; } }
+
+// Source notes link to the report they cite.
+.scene__source.cds--link { @include type.type-style('helper-text-01'); color: theme.$text-helper; text-decoration: underline; text-underline-offset: 2px; }
+.scene__source.cds--link:hover { color: theme.$link-primary; }
 
 // Quote: under the stage on wide screens (fading in with the Automation scene), after the table below lg.
 .quote { max-width: 34rem; }

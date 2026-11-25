@@ -69,7 +69,9 @@ export function stageState(sceneId, ctx = {}) {
     case 'problem':
       st.layers[0] = IMBALANCED; break;
     case 'trade-off':
-      if (ctx.option === 'cut') {
+      if (ctx.option === 'balance') {
+        // Turbonomic's option: the default healthy, right-sized cluster.
+      } else if (ctx.option === 'cut') {
         st.layers[0] = ['teal', null, 'red', null, 'red', null, 'red', null, 'teal'].map(c => c ? { c, s: c === 'red' ? RED_S : 1, o: 1 } : hidden);
       } else {
         st.layers[0] = all('teal').map((b, k) => ([0, 2, 4, 6, 8].includes(k) ? { c: 'yellow', s: YELLOW_S, o: 1 } : b));
