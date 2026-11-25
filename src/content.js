@@ -10,14 +10,13 @@ export const CASE_STUDIES = {
 // 3D renders: put Blender images in /public/renders and add `render: 'renders/scene-01.png'`
 // to a scene (or to a trade-off option). That scene then shows the image instead of the
 // animated blocks; scenes without a render keep the blocks.
-// Color key shown beside the blocks from The problem through Proven results. `only` limits an entry to one scene.
+// Color key shown just above the blocks in The problem, where the colors are introduced. It leaves with that scene.
 export const LEGEND = {
-  scenes: ['problem', 'trade-off', 'visibility', 'automation', 'results'],
+  scenes: ['problem'],
   items: [
     { color: 'teal', label: 'Healthy' },
     { color: 'yellow', label: 'Oversized: wasted spend' },
-    { color: 'red', label: 'Congested: slow service' },
-    { color: 'gray', label: 'Not yet scanned', only: 'visibility' }
+    { color: 'red', label: 'Congested: slow service' }
   ]
 };
 

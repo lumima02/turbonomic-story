@@ -153,7 +153,7 @@ export default function App() {
   // while the stage morphs so the two move together. The scan plane is left out: it starts far above the stack.
   const legendRef = useRef(null);
   useEffect(() => {
-    if (!wide) return undefined;
+    if (!wide || !LEGEND.scenes.includes(active)) return undefined;
     const place = () => {
       const stage = stageRef.current, legend = legendRef.current;
       if (!stage || !legend) return;
@@ -471,9 +471,12 @@ export default function App() {
 // What the block colors mean, above the stage. Each swatch is a tiny block drawn with the same face colors.
 function Legend({ active, innerRef }) {
   const shown = LEGEND.scenes.includes(active);
+  // Past its scene, it leaves upward (as if scrolled off); before it, it waits below.
+  const idx = id => SCENES.findIndex(sc => sc.id === id);
+  const past = idx(active) > Math.max(...LEGEND.scenes.map(idx));
   return (
-    <ul ref={innerRef} className={'legend' + (shown ? ' is-shown' : '')} aria-label="Block colors" aria-hidden={!shown || undefined}>
-      {LEGEND.items.filter(it => !it.only || it.only === active).map(it => (
+    <ul ref={innerRef} className={'legend' + (shown ? ' is-shown' : past ? ' is-leaving' : '')} aria-label="Block colors" aria-hidden={!shown || undefined}>
+      {LEGEND.items.map(it => (
         <li key={it.color} className="legend__item">
           <svg className="legend__cube" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true">
             <polygon points="7,0 14,4 7,8 0,4" style={{ fill: `var(--block-${it.color}-top)` }} />

@@ -271,12 +271,13 @@ $arrow-draw: 480ms;
 .ring__count { fill: theme.$text-primary; font-size: 13px; }
 
 // ---------- Stage (right column, pinned) ----------
-// Color key just above the blocks (App.jsx sets its top from where they're drawn); fades in with The problem and
-// out after Proven results.
-.legend { position: absolute; top: $spacing-07; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; flex-wrap: wrap; justify-content: center;
+// Color key just above the blocks in The problem only (App.jsx sets its top from where they're drawn). It rises in
+// with the scene and, on the way out, slides up and fades as if scrolling off with it.
+.legend { position: absolute; top: $spacing-07; left: 50%; transform: translate(-50%, $spacing-05); z-index: 1; display: flex; flex-wrap: wrap; justify-content: center;
   gap: $spacing-03 $spacing-06; width: max-content; max-width: calc(100% - #{$spacing-07});
-  opacity: 0; visibility: hidden; transition: opacity $moderate $ease, visibility 0s linear $moderate; }
-.legend.is-shown { opacity: 1; visibility: visible; transition: opacity $moderate $ease 300ms, visibility 0s; }
+  opacity: 0; visibility: hidden; transition: opacity $moderate $ease, transform $slow $ease, visibility 0s linear $slow; }
+.legend.is-shown { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition: opacity $moderate $ease 300ms, transform $slow $ease 300ms, visibility 0s; }
+.legend.is-leaving { transform: translate(-50%, -#{$spacing-09}); }
 .legend__item { display: flex; align-items: center; gap: $spacing-03; @include type.type-style('label-01'); color: theme.$text-secondary; }
 .legend__cube { flex: none; }
 .legend__cube polygon { transition: fill $moderate $ease; }
