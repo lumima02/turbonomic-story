@@ -181,7 +181,7 @@ $scene-buffer: 100vh;
 // Next steps: who it helps, as three short columns above the buttons.
 .audiences { margin-top: $spacing-07; display: grid; grid-template-columns: repeat(3, 1fr); gap: $spacing-05; max-width: 36rem; }
 .audience { border-top: 1px solid theme.$border-subtle-01; padding-top: $spacing-04; display: flex; flex-direction: column; gap: $spacing-02; }
-.audience__role { @include type.type-style('heading-compact-01'); color: theme.$text-primary; }
+.audience__role { @include type.type-style('heading-compact-01'); color: theme.$link-primary; }   // Carbon blue, as the eyebrows
 .audience__text { @include type.type-style('body-compact-01'); color: theme.$text-secondary; }
 @include bp.breakpoint-down(md) { .audiences { grid-template-columns: 1fr; } }
 
