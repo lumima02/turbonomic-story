@@ -265,6 +265,13 @@ export default function App() {
                           <ProgressBar className="bar bar--risk" label="Risk" value={revealed.has(s.id) ? o.risk : 0} max={100} />
                         </div>
                         <p className="scene__bridge">{o.bridge || s.bridge}</p>
+                        {/* Two stacked chevrons that light in turn, pointing on to the next scene; clicking glides there. */}
+                        <button type="button" className="scroll-cue" aria-label={`Continue to ${SCENES[k + 1].eyebrow}`} onClick={() => scrollTo(SCENES[k + 1].id)}>
+                          <svg width="28" height="32" viewBox="0 0 28 32" aria-hidden="true">
+                            <path className="scroll-cue__v" d="M5 5 L14 14 L23 5" />
+                            <path className="scroll-cue__v scroll-cue__v--2" d="M5 16 L14 25 L23 16" />
+                          </svg>
+                        </button>
                       </>
                     );
                   })()}

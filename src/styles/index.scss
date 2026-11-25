@@ -103,6 +103,17 @@ $scene-buffer: 100vh;
 .scene__switcher .cds--content-switcher--selected { font-weight: 600; }
 .scene__bars { margin-top: $spacing-07; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: $spacing-07; }
 .scene__bridge { @include stepped-type(type.$fluid-heading-04); font-weight: 300; margin-top: $spacing-09; }
+// Scroll cue under the trade-off's last line: two stacked chevrons that light top then bottom, on a loop.
+.scroll-cue { display: block; margin-top: $spacing-05; margin-left: -$spacing-03; padding: $spacing-03; border: 0; background: none; cursor: pointer; color: theme.$icon-primary; }
+.scroll-cue:focus-visible { outline: 2px solid theme.$focus; }
+.scroll-cue svg { display: block; overflow: visible; }
+.scroll-cue__v { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; animation: cue-step 1.6s $ease infinite; }
+.scroll-cue__v--2 { animation-delay: 0.2s; }
+.scroll-cue:hover { color: theme.$link-primary; }
+@keyframes cue-step {
+  0%, 100% { opacity: 0.25; transform: translateY(-3px); }
+  40% { opacity: 1; transform: translateY(2px); }
+}
 .scene__panel { margin-top: $spacing-07; max-width: 20.625rem; }
 .scene__table { margin-top: $spacing-07; }
 .scene__controls { margin-top: $spacing-06; display: flex; align-items: flex-end; justify-content: space-between; gap: $spacing-05; }
@@ -388,7 +399,7 @@ $arrow-draw: 480ms;
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .stage__canvas, .stage__root, .stage__plate, .stage__lines, .stage__lines line, .stage__scan, .block, .block__body, .block polygon, .progress__step, .progress__marker { transition: none !important; }
-  .block__bob.is-floating, .hotspot, .stage__render, .compare__tag, .compare__divider, .stage__lines line, .pulse, .pulse path, .hotspot::before, .hotspot::after, .hotspot .cds--toggletip { animation: none !important; }
+  .block__bob.is-floating, .hotspot, .stage__render, .compare__tag, .compare__divider, .stage__lines line, .pulse, .pulse path, .scroll-cue__v, .hotspot::before, .hotspot::after, .hotspot .cds--toggletip { animation: none !important; }
   .pulse path { opacity: 0.3; transform: scale(1.1); }
   .pulse path + path { display: none; }
   .scene__bars .cds--progress-bar__bar, .ring__seg, .quote--stage { transition: none !important; }
