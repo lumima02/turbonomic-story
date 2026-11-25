@@ -3,7 +3,32 @@
 @use '@carbon/react/scss/config' with ($css--font-face: false);
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme' with ($theme: themes.$g100);
-@use '@carbon/react';
+// Only the Carbon components this page uses, rather than all of @carbon/react: a much smaller stylesheet is cheaper
+// for the browser to match on every animation frame. Add a component here when you add it to the page.
+@use '@carbon/react/scss/reset';
+@use '@carbon/react/scss/grid';
+@use '@carbon/react/scss/layer';
+@use '@carbon/react/scss/layout';   // size tokens that buttons and other controls are measured with
+@use '@carbon/react/scss/zone';
+@use '@carbon/react/scss/components/button';
+@use '@carbon/react/scss/components/content-switcher';
+@use '@carbon/react/scss/components/data-table';
+@use '@carbon/react/scss/components/form';
+@use '@carbon/react/scss/components/inline-loading';
+@use '@carbon/react/scss/components/link';
+@use '@carbon/react/scss/components/loading';
+@use '@carbon/react/scss/components/modal';
+@use '@carbon/react/scss/components/notification';
+@use '@carbon/react/scss/components/popover';
+@use '@carbon/react/scss/components/progress-bar';
+@use '@carbon/react/scss/components/progress-indicator';
+@use '@carbon/react/scss/components/tag';
+@use '@carbon/react/scss/components/text-input';
+@use '@carbon/react/scss/components/tile';
+@use '@carbon/react/scss/components/toggle';
+@use '@carbon/react/scss/components/toggletip';
+@use '@carbon/react/scss/components/tooltip';
+@use '@carbon/react/scss/components/ui-shell';
 @use '@carbon/react/scss/type';
 @use '@carbon/react/scss/spacing' as *;
 @use '@carbon/react/scss/breakpoint' as bp;
@@ -246,7 +271,8 @@ $arrow-draw: 480ms;
 .ring__count { fill: theme.$text-primary; font-size: 13px; }
 
 // ---------- Stage (right column, pinned) ----------
-// Color key across the top of the stage; fades in with The problem and out after Proven results.
+// Color key just above the blocks (App.jsx sets its top from where they're drawn); fades in with The problem and
+// out after Proven results.
 .legend { position: absolute; top: $spacing-07; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; flex-wrap: wrap; justify-content: center;
   gap: $spacing-03 $spacing-06; width: max-content; max-width: calc(100% - #{$spacing-07});
   opacity: 0; visibility: hidden; transition: opacity $moderate $ease, visibility 0s linear $moderate; }
@@ -295,6 +321,8 @@ $arrow-draw: 480ms;
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .stage__svg.is-interactive { touch-action: pan-y; }
 .block__bob.is-floating { animation: bob 4s ease-in-out infinite alternate; }
+// Set by Stage.jsx while a stage is scrolled out of view: its loops pause.
+.stage__svg.is-offscreen .block__bob, .stage__svg.is-offscreen .pulse path { animation-play-state: paused; }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-14px); } }
 
 // Hotspots (Carbon toggletip)

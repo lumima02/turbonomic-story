@@ -16,6 +16,15 @@ const HEADER = 48;
 
 export default function App() {
   const [active, setActive] = useState(SCENES[0].id);
+  // Wide screens show one pinned stage beside the story; narrower ones show a stage inside each scene. Only the set
+  // in use is built: the hidden set used to keep running its animation loops (and doubled the page's SVG).
+  const WIDE = '(min-width: 66rem)';
+  const [wide, setWide] = useState(() => window.matchMedia(WIDE).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(WIDE), on = () => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
   // Day mode swaps the page to Carbon's white theme (the cds--white zone class on body); the choice is remembered.
   const [day, setDay] = useState(() => { try { return localStorage.getItem('theme') === 'day'; } catch { return false; } });
   useEffect(() => {
@@ -138,7 +147,29 @@ export default function App() {
     raf = requestAnimationFrame(follow);
     window.addEventListener('resize', resize);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, [active]);
+  }, [active, wide]);
+
+  // The color key sits just above the blocks (their drawn top varies by scene and window), following them each frame
+  // while the stage morphs so the two move together. The scan plane is left out: it starts far above the stack.
+  const legendRef = useRef(null);
+  useEffect(() => {
+    if (!wide) return undefined;
+    const place = () => {
+      const stage = stageRef.current, legend = legendRef.current;
+      if (!stage || !legend) return;
+      const parts = stage.querySelectorAll('.stage__svg .block, .stage__svg .stage__plate');
+      let top = Infinity;
+      parts.forEach(el => { const r = el.getBoundingClientRect(); if (r.height > 2) top = Math.min(top, r.top); });
+      if (top === Infinity) return;
+      const s = stage.getBoundingClientRect();
+      legend.style.top = Math.max(16, top - s.top - 32 - legend.offsetHeight) + 'px';
+    };
+    let raf; const t0 = performance.now();
+    const follow = now => { place(); if (now - t0 < 1600) raf = requestAnimationFrame(follow); };
+    raf = requestAnimationFrame(follow);
+    window.addEventListener('resize', place);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', place); };
+  }, [active, wide, option]);   // the trade-off options stack the blocks to different heights
 
   // Jumps to a scene glide rather than snap: an eased scroll whose length grows with the distance (about 1s for
   // the next scene, up to 2.4s across the whole story). Any wheel, touch or key input hands control back at once.
@@ -392,19 +423,23 @@ export default function App() {
                 )}
                 </div>
 
-                <div className="scene__stage-inline" aria-hidden="true">{/* Below lg: an upcoming scene's stage holds the previous scene's state, then morphs when you reach it. */}
-                  {stageFor(k > activeIdx && k > 0 ? SCENES[k - 1].id : s.id, false)}</div>
+                {!wide && (
+                  <div className="scene__stage-inline" aria-hidden="true">{/* Below lg: an upcoming scene's stage holds the previous scene's state, then morphs when you reach it. */}
+                    {stageFor(k > activeIdx && k > 0 ? SCENES[k - 1].id : s.id, false)}</div>
+                )}
               </section>
             ))}
           </Column>
 
           <Column lg={{ start: 9, end: 17 }} className="story__stage">
-            <div ref={stageRef} className={'stage' + (active === 'automation' ? ' has-quote' : '')}>
-              {stageFor(active, true)}
-              <Legend active={active} />
-              <Quote quote={byId('automation').quote} className={'quote--stage' + (active === 'automation' ? ' is-shown' : '')}
-                hidden={active !== 'automation'} innerRef={quoteRef} />
-            </div>
+            {wide && (
+              <div ref={stageRef} className={'stage' + (active === 'automation' ? ' has-quote' : '')}>
+                {stageFor(active, true)}
+                <Legend active={active} innerRef={legendRef} />
+                <Quote quote={byId('automation').quote} className={'quote--stage' + (active === 'automation' ? ' is-shown' : '')}
+                  hidden={active !== 'automation'} innerRef={quoteRef} />
+              </div>
+            )}
           </Column>
         </Grid>
       </main>
@@ -434,10 +469,10 @@ export default function App() {
 }
 
 // What the block colors mean, above the stage. Each swatch is a tiny block drawn with the same face colors.
-function Legend({ active }) {
+function Legend({ active, innerRef }) {
   const shown = LEGEND.scenes.includes(active);
   return (
-    <ul className={'legend' + (shown ? ' is-shown' : '')} aria-label="Block colors" aria-hidden={!shown || undefined}>
+    <ul ref={innerRef} className={'legend' + (shown ? ' is-shown' : '')} aria-label="Block colors" aria-hidden={!shown || undefined}>
       {LEGEND.items.filter(it => !it.only || it.only === active).map(it => (
         <li key={it.color} className="legend__item">
           <svg className="legend__cube" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true">

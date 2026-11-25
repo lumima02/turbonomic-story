@@ -117,7 +117,7 @@ function pushFor(x, y, i, j, ptr) {
   return [(dx / dist) * f * PUSH, (dy / dist) * f * PUSH * 0.5 - f * RISE];
 }
 
-function Block({ i, j, state, lift, float, index, delay, fillDelay = delay, pushRef, clip, pulse = true }) {
+function BlockView({ i, j, state, lift, float, index, delay, fillDelay = delay, pushRef, clip, pulse = true }) {
   const [x, y] = cellXY(i, j, lift + (float ? FLOAT[index % 9] : 0));
   const p = COLORS[state.c];
   return (
@@ -143,6 +143,11 @@ function Block({ i, j, state, lift, float, index, delay, fillDelay = delay, push
   );
 }
 const PULSE_ARC = `M ${-W * 0.6} 0 A ${W * 0.6} ${W * 0.6} 0 0 1 ${W * 0.6} 0`;
+// During the scan the stage re-renders on every frame the plane moves; a block only redraws when something it shows
+// changes. (pushRef is left out: it always registers the same element for the same block.)
+const SAME = ['i', 'j', 'lift', 'float', 'index', 'delay', 'fillDelay', 'clip', 'pulse'];
+const Block = React.memo(BlockView, (a, b) => SAME.every(k => a[k] === b[k])
+  && a.state.c === b.state.c && a.state.s === b.state.s && a.state.o === b.state.o);
 
 // The scan plane is a horizontal slice that steps down through the layers, pausing at each one. Its height is a
 // cut: the stage is drawn in bands either side of it, bottom up (everything below the plane, the plane, then
@@ -163,7 +168,7 @@ function ease(x) {
 // out on the bottom layer. Each stop is halfway up that layer's blocks. Two rests keep the loop from feeling rushed:
 // END_HOLD leaves the fully lit stack in view after the plane fades, and START_HOLD lets the reset to gray
 // (which happens as the sweep restarts) finish before the plane comes back.
-const START_HOLD = 1600, END_HOLD = 1400;
+const START_HOLD = 1600, END_HOLD = 1400, SCAN_DELAY = 1000;
 function scanTimeline(lift) {
   const stop = L => lift[L] * G + H / 2;
   const S = START_HOLD;
@@ -206,27 +211,39 @@ export function StageSvg({ state, label }) {
   const uid = React.useId().replace(/:/g, '');
   const [planes, setPlanes] = React.useState([]);
   const liftKey = state.lift.join(',');
+  // Off-screen stages (the in-scene copies on narrow screens) pause: no scan loop, and the CSS loops stop too.
+  const svgRef = React.useRef(null);
+  const [onScreen, setOnScreen] = React.useState(true);
+  React.useEffect(() => {
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
+    io.observe(svgRef.current);
+    return () => io.disconnect();
+  }, []);
   React.useEffect(() => {
     if (!state.scan) { setPlanes([]); return undefined; }
+    if (!onScreen) return undefined;
     const keys = scanTimeline(liftKey.split(',').map(Number));
     if (reducedMotion()) { setPlanes([{ h: SCAN_STILL, o: 1, lit: [false, false, true] }]); return undefined; }
-    let frame, start;
+    // The sweep waits until the stage has finished morphing into its layers (SCAN_DELAY), so the two never compete
+    // for the same frames; the plane is still hidden for that long anyway (START_HOLD). Then it only re-renders when
+    // the plane has visibly moved, so the holds between stops cost nothing.
+    let frame, start, last = '';
     const tick = now => {
-      if (start === undefined) start = now;
-      setPlanes([{ ...scanAt(keys, now - start), lit: litAt(keys, now - start) }]);
+      if (start === undefined) start = now - SCAN_DELAY;
+      const t = now - start, at = scanAt(keys, t), lit = litAt(keys, t);
+      const sig = `${Math.round(at.h * 4)}|${Math.round(at.o * 200)}|${lit}`;
+      if (sig !== last) { last = sig; setPlanes([{ ...at, lit }]); }
       frame = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [state.scan, liftKey]);
+    const wait = setTimeout(() => { frame = requestAnimationFrame(tick); }, SCAN_DELAY);
+    return () => { clearTimeout(wait); cancelAnimationFrame(frame); };
+  }, [state.scan, liftKey, onScreen]);
   // Two bands, below and above the plane. Both always hold every block, so the two halves of a block morph
   // together between scenes and always add up to the whole block. With no scan, the upper band is hidden.
   const plane = planes[0];
   const scanning = !!plane;
   const bounds = [-Infinity, scanning ? plane.h : Infinity, Infinity];
 
-
-  const svgRef = React.useRef(null);
   const interactive = state.float && !reducedMotion();
   const live = React.useRef({ state, interactive, ptr: null, frame: 0, last: 0, els: [], pos: [], vel: [] });
   live.current.state = state;
@@ -282,7 +299,7 @@ export function StageSvg({ state, label }) {
   const order = [];
   for (let L = 0; L < 3; L++) for (let s = 0; s <= 4; s++) for (let j = 0; j < 3; j++) { const i = s - j; if (i >= 0 && i < 3) order.push([L, i, j]); }
   return (
-    <svg ref={svgRef} className={'stage__svg' + (interactive ? ' is-interactive' : '')} viewBox="0 0 720 740" role="img" aria-label={label}
+    <svg ref={svgRef} className={'stage__svg' + (interactive ? ' is-interactive' : '') + (onScreen ? '' : ' is-offscreen')} viewBox="0 0 720 740" role="img" aria-label={label}
       onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
       <g className="stage__root" style={{ transform: `translate(360px, ${state.ty}px) scale(${state.zoom})` }}>
         <defs>
@@ -330,7 +347,8 @@ export function StageSvg({ state, label }) {
                     {order.filter(([BL]) => BL === L).map(([, i, j]) => {
                       const k = j * 3 + i;
                       const b = state.layers[L][k];
-                      const dark = plane && !plane.lit[L];
+                      // Gray until the plane reaches the layer (and before the sweep starts at all).
+                      const dark = state.scan && (!plane || !plane.lit[L]);
                       return <Block key={k} i={i} j={j} index={L * 9 + k} state={dark ? { ...b, c: 'gray' } : b}
                         fillDelay={dark ? RESET_DELAY(i, j) : delayFor(L, i, j)} lift={state.lift[L]} float={state.float && L === 0} delay={delayFor(L, i, j)}
                         clip={scanning ? `${uid}-${n}-${L}-${k}` : undefined}
