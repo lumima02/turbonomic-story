@@ -95,8 +95,9 @@ $scene-buffer: 100vh;
 .scene__switcher .cds--content-switcher--selected { font-weight: 600; }
 .scene__bars { margin-top: $spacing-07; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: $spacing-07; }
 .scene__bridge { @include stepped-type(type.$fluid-heading-04); font-weight: 300; margin-top: $spacing-09; }
-// Scroll cue under the trade-off's last line: two stacked chevrons that light top then bottom, on a loop.
-.scroll-cue { display: block; margin-top: $spacing-05; margin-left: -$spacing-03; padding: $spacing-03; border: 0; background: none; cursor: pointer; color: theme.$icon-primary; }
+// Scroll cue in the first scene: "See how it works" beside two stacked chevrons that light top then bottom, on a loop.
+.scroll-cue { display: inline-flex; align-items: center; gap: $spacing-04; margin-left: -$spacing-03; padding: $spacing-03; border: 0; background: none; cursor: pointer;
+  @include type.type-style('heading-compact-02'); font-weight: 400; color: theme.$text-primary; transition: color 150ms $ease; }
 .scroll-cue:focus-visible { outline: 2px solid theme.$focus; }
 .scroll-cue svg { display: block; overflow: visible; }
 .scroll-cue__v { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; animation: cue-step 1.6s $ease infinite; }
